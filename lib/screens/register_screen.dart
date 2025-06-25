@@ -65,6 +65,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         firma: firma,
         vkn: vkn,
         adres: adres,
+
       );
 
       if (user != null) {

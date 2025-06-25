@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
-import 'dashboard_screen.dart';
+import 'dasboard/dashboard_screen.dart';
+import 'forgot_password_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -63,6 +64,18 @@ class _LoginScreenState extends State<LoginScreen> {
               controller: _passwordController,
               decoration: const InputDecoration(labelText: "Şifre"),
               obscureText: true,
+            ),
+            const SizedBox(height: 16),
+
+            TextButton(
+
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const ForgotPasswordScreen()),
+                );
+              },
+              child: const Text("Şifremi Unuttum?"),
             ),
             const SizedBox(height: 24),
             _loading

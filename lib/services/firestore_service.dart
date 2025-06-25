@@ -13,6 +13,7 @@ class FirestoreService {
     required String vkn,
     required String adres,
     required String email,
+
   }) async {
     final userDoc = _db.collection('users').doc(uid);
     await userDoc.set({
@@ -24,6 +25,8 @@ class FirestoreService {
       'adres': adres,
       'email': email,
       'createdAt': FieldValue.serverTimestamp(),
+      'rol': 'normal', // << rol burada atanıyor
+
     });
   }
 }
