@@ -36,6 +36,11 @@ class MyApp extends StatelessWidget {
         '/terms': (context) => const TermsPage(),
         '/about': (context) => const AboutPage(),
 
+        '/finance': (context) => const AboutPage(),
+        '/my-auctions': (context) => const AboutPage(),
+        '/returns': (context) => const AboutPage(),
+
+
       },
     );
   }
