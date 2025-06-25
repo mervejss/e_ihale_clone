@@ -42,7 +42,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           children: [
             DrawerHeader(
               decoration: const BoxDecoration(
-                color: Color(0xFF001F54), // Koyu lacivert
+                color: Color(0xFF1976D2),
               ),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,

@@ -1,4 +1,5 @@
 // screens/profile/profile_screen.dart
+import 'package:e_ihale_clone/screens/profile/profile_pages/phone_verification_page.dart';
 import 'package:flutter/material.dart';
 import 'profile_pages/profile_info_page.dart';
 import 'profile_pages/change_password_page.dart';
@@ -36,6 +37,8 @@ class ProfileScreen extends StatelessWidget {
             MaterialPageRoute(builder: (_) => const EmailVerificationPage()),
           ),
         ),
+
+
       ],
     );
   }
