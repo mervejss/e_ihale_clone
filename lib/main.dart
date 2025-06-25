@@ -1,5 +1,9 @@
 import 'package:e_ihale_clone/screens/auth_wrapper.dart';
-import 'package:e_ihale_clone/screens/dashboard_screen.dart';
+import 'package:e_ihale_clone/screens/dasboard/dashboard_screen.dart';
+import 'package:e_ihale_clone/screens/dasboard/hamburger_menu/about_page.dart';
+import 'package:e_ihale_clone/screens/dasboard/hamburger_menu/faq_page.dart';
+import 'package:e_ihale_clone/screens/dasboard/hamburger_menu/terms_page.dart';
+import 'package:e_ihale_clone/screens/forgot_password_screen.dart';
 import 'package:e_ihale_clone/screens/home_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -27,6 +31,11 @@ class MyApp extends StatelessWidget {
         '/register': (context) => const RegisterScreen(),
         '/dashboard': (context) => const DashboardScreen(),
         '/home': (context) => const HomeScreen(),
+        '/forgot_password': (context) => const ForgotPasswordScreen(),
+        '/faq': (context) => const FAQPage(),
+        '/terms': (context) => const TermsPage(),
+        '/about': (context) => const AboutPage(),
+
       },
     );
   }

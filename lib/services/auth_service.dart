@@ -15,6 +15,7 @@ class AuthService {
     required String firma,
     required String vkn,
     required String adres,
+
   }) async {
     try {
       UserCredential result = await _auth.createUserWithEmailAndPassword(
@@ -34,6 +35,7 @@ class AuthService {
           email: email,
         );
       }
+      await user!.sendEmailVerification();
 
       return user;
     } on FirebaseAuthException catch (e) {
@@ -65,5 +67,6 @@ class AuthService {
       throw Exception(e.message ?? "Giriş yapılırken bir hata oluştu.");
     }
   }
+
 
 }
