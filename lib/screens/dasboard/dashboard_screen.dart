@@ -25,9 +25,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
+    const Color primaryColor = Color(0xFF1e529b);
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('E-İhale'),
+        title: const Text('Teklifin Gelsin',style: TextStyle(color: Color(0xFF1e529b)),),
         actions: [
           /*IconButton(
             icon: const Icon(Icons.logout),
@@ -38,65 +40,101 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ),
       drawer: Drawer(
         child: ListView(
-          padding: EdgeInsets.all(10),
           children: [
             DrawerHeader(
+              padding: const EdgeInsets.all(10),
               decoration: const BoxDecoration(
-                color: Color(0xFF1976D2),
+                color: Color(0xFF1e529b),
               ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Container(
-                    height: 125,
-                    width: 125,
-                    padding: const EdgeInsets.all(3),
-                    margin: EdgeInsets.only(bottom: 10),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                    ),
-                    child: Image.asset(
-                      'assets/images/logo_eihale.png',
+              child: Center(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
                       height: 100,
-                      fit: BoxFit.contain,
+                      width: 100,
+                      padding: const EdgeInsets.all(2),
+                      decoration: const BoxDecoration(
+                        color: Colors.white,
+                      ),
+                      child: Image.asset(
+                        'assets/images/logo_teklifingelsin.jpg',
+                        fit: BoxFit.contain,
+                      ),
                     ),
-                  ),
-
-
-
-                ],
+                    const SizedBox(height: 12),
+                    const Text(
+                      'Teklifin Gelsin',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
               ),
             ),
 
-
+            // 🟦 ÜST GRUP
             ListTile(
-              leading: const Icon(Icons.question_answer),
+              leading: const Icon(Icons.account_balance_wallet, color: primaryColor),
+              title: const Text('Finansal Durum'),
+              onTap: () => Navigator.pushNamed(context, '/finance'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.gavel, color: primaryColor),
+              title: const Text('İhalelerim'),
+              onTap: () => Navigator.pushNamed(context, '/my-auctions'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.assignment_return, color: primaryColor),
+              title: const Text('İade Taleplerim'),
+              onTap: () => Navigator.pushNamed(context, '/returns'),
+            ),
+
+            const Divider(thickness: 0.8, color: Colors.grey),
+
+            // 🟨 ORTA GRUP
+            ListTile(
+              leading: const Icon(Icons.question_answer, color: primaryColor),
               title: const Text('Sıkça Sorulan Sorular'),
               onTap: () => Navigator.pushNamed(context, '/faq'),
             ),
             ListTile(
-              leading: const Icon(Icons.article),
+              leading: const Icon(Icons.article, color: primaryColor),
               title: const Text('Genel Şartlar'),
               onTap: () => Navigator.pushNamed(context, '/terms'),
             ),
             ListTile(
-              leading: const Icon(Icons.info),
+              leading: const Icon(Icons.info, color: primaryColor),
               title: const Text('Hakkımızda'),
               onTap: () => Navigator.pushNamed(context, '/about'),
             ),
+
+            const Divider(thickness: 0.8, color: Colors.grey),
+
+            // 🔴 ALT GRUP
             ListTile(
-              leading: const Icon(Icons.logout),
+              leading: const Icon(Icons.logout, color: primaryColor),
               title: const Text('Çıkış Yap'),
               onTap: () => _signOut(),
             ),
+
           ],
         ),
       ),
+
 
       body: _pages[_selectedIndex],
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
         onTap: (index) => setState(() => _selectedIndex = index),
+        selectedItemColor: const Color(0xFF1e529b), // Aktif ikon & yazı rengi
+        unselectedItemColor: Colors.grey,           // Pasif ikon & yazı rengi
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.home),
@@ -112,6 +150,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
         ],
       ),
+
     );
   }
 }
