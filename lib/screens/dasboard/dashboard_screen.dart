@@ -1,6 +1,10 @@
 import 'package:e_ihale_clone/screens/profile/profile_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'bottom_navigator_bar/home_page.dart';
+import 'bottom_navigator_bar/auctions/auctions_page.dart';
+import 'bottom_navigator_bar/profile_page.dart';
+
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -26,10 +30,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   Widget build(BuildContext context) {
     const Color primaryColor = Color(0xFF1e529b);
+    final List<Widget> _pages = [
+      const HomePage(),
+      const AuctionsPage(),
+      const ProfilePage(),
+    ];
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Teklifin Gelsin',style: TextStyle(color: Color(0xFF1e529b)),),
+        backgroundColor: primaryColor,
+        title: const Text('Teklifin Gelsin',style: TextStyle(color: Colors.white),),
         actions: [
           /*IconButton(
             icon: const Icon(Icons.logout),
