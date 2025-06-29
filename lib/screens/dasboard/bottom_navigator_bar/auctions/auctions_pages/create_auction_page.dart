@@ -61,8 +61,6 @@ class _CreateAuctionPageState extends State<CreateAuctionPage> {
     if (images != null) {
       if (images.length > 10) {
         _showImageAlert('En fazla 10 resim seçebilirsiniz.');
-      } else if (images.isEmpty) {
-        _showImageAlert('En az 1 resim seçmelisiniz.');
       } else {
         setState(() {
           _selectedImages = images;
@@ -304,7 +302,7 @@ class _CreateAuctionPageState extends State<CreateAuctionPage> {
                                       ),
                                     ),
                                   ),
-                                  Positioned(
+                                  const Positioned(
                                     bottom: 2,
                                     right: 4,
                                     child: Icon(
@@ -322,6 +320,14 @@ class _CreateAuctionPageState extends State<CreateAuctionPage> {
                     ),
                     const Text(
                       'Fotoğrafları kaydırarak sıralamasını değiştirebilirsiniz.',
+                      style: TextStyle(
+                        color: Colors.grey,
+                        fontStyle: FontStyle.italic,
+                        fontSize: 12,
+                      ),
+                    ),
+                    const Text(
+                      'Fotoğraflara tıklayarak ise yüklediğiniz fotoğrafı daha büyük boyutta görüntüleyebilir ve inceleyebilirsiniz.',
                       style: TextStyle(
                         color: Colors.grey,
                         fontStyle: FontStyle.italic,
@@ -434,7 +440,7 @@ class _CreateAuctionPageState extends State<CreateAuctionPage> {
             } : null,
             onChanged: (_) {
               _formKey.currentState!.validate(); // Trigger revalidation
-              setState(() {}); // Close error message if any
+              setState(() {});
             },
           ),
         ],
