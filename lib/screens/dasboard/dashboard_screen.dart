@@ -1,6 +1,7 @@
 import 'package:e_ihale_clone/screens/profile/profile_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'bottom_navigator_bar/auctions/auctions_pages/create_auction_page.dart';
 import 'bottom_navigator_bar/home_page.dart';
 import 'bottom_navigator_bar/auctions/auctions_page.dart';
 import 'bottom_navigator_bar/profile_page.dart';
@@ -46,6 +47,39 @@ class _DashboardScreenState extends State<DashboardScreen> {
             tooltip: 'Çıkış Yap',
             onPressed: _signOut,
           ),*/
+
+          Padding(
+            padding: const EdgeInsets.only(right: 5.0),
+            child: GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const CreateAuctionPage(),
+                  ),
+                );
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.white),
+                  borderRadius: BorderRadius.circular(30),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: const [
+                    Icon(Icons.add_circle_outline, color: Colors.white, size: 20),
+                    SizedBox(width: 6),
+                    Text('Yeni İhale Oluştur', style: TextStyle(color: Colors.white)),
+                  ],
+                ),
+
+              ),
+
+            ),
+          ),
+
+
         ],
       ),
       drawer: Drawer(

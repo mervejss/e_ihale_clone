@@ -26,7 +26,6 @@ class AuthWrapper extends StatelessWidget {
 
               if (roleSnapshot.hasData) {
                 final rol = roleSnapshot.data!;
-                // Şu an tüm roller için aynı sayfa, sonra farklılaştırabilirsin
                 return const DashboardScreen();
               }
 
