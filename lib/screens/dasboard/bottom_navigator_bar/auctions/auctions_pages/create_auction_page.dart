@@ -1,5 +1,4 @@
 import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
@@ -35,6 +34,7 @@ class _CreateAuctionPageState extends State<CreateAuctionPage> {
     'Anakart',
     'Teknik parça',
   ];
+
   final Map<String, IconData> _categoryIcons = {
     'Telefon': Icons.phone_android,
     'Bilgisayar': Icons.computer,
@@ -89,7 +89,23 @@ class _CreateAuctionPageState extends State<CreateAuctionPage> {
     }
   }
 
-
+  void _showImageOptions(BuildContext context, String path) {
+    showDialog(
+      context: context,
+      builder: (_) => Dialog(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Image.file(File(path)),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Kapat'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -128,7 +144,6 @@ class _CreateAuctionPageState extends State<CreateAuctionPage> {
                 hintText: 'Ürün modelini buraya giriniz',
                 icon: Icons.device_hub,
                 isRequired: true,
-
               ),
               _buildTextField(
                 controller: _descriptionController,
@@ -137,9 +152,7 @@ class _CreateAuctionPageState extends State<CreateAuctionPage> {
                 icon: Icons.description,
                 maxLines: 2,
                 isRequired: true,
-
               ),
-
               _buildSectionHeader('Kategori Seçimi'),
               _buildDropdownCategory(),
               _buildSectionHeader('Fiyat Bilgileri'),
@@ -170,7 +183,6 @@ class _CreateAuctionPageState extends State<CreateAuctionPage> {
                     style: TextStyle(color: Colors.red[700], fontSize: 12),
                   ),
                 ),
-
               const SizedBox(height: 12),
               SizedBox(
                 height: 120,
@@ -178,42 +190,67 @@ class _CreateAuctionPageState extends State<CreateAuctionPage> {
                     ? Column(
                   children: [
                     Expanded(
-                      child: ListView.builder(
+                      child: ReorderableListView(
                         scrollDirection: Axis.horizontal,
-                        itemCount: _selectedImages!.length,
-                        itemBuilder: (context, index) {
-                          return Stack(
-                            children: [
-                              Container(
-                                margin: const EdgeInsets.all(4.0),
-                                decoration: BoxDecoration(
-                                  border: Border.all(color: primaryColor, width: 2),
-                                ),
-                                child: Image.file(
-                                  File(_selectedImages![index].path),
-                                  fit: BoxFit.cover,
-                                  width: 100,
-                                  height: 100,
-                                ),
-                              ),
-                              Positioned(
-                                top: 2,
-                                right: 2,
-                                child: CircleAvatar(
-                                  radius: 12,
-                                  backgroundColor: primaryColor,
-                                  child: Text(
-                                    (index + 1).toString(),
-                                    style: TextStyle(
-                                      color: secondaryColor,
-                                      fontSize: 12,
+                        onReorder: (oldIndex, newIndex) {
+                          setState(() {
+                            if (newIndex > oldIndex) newIndex -= 1;
+                            final item = _selectedImages!.removeAt(oldIndex);
+                            _selectedImages!.insert(newIndex, item);
+                          });
+                        },
+                        children: _selectedImages!.map((image) {
+                          final index = _selectedImages!.indexOf(image);
+                          return Container(
+                            key: ValueKey(image),
+                            margin: const EdgeInsets.all(4.0),
+                            child: GestureDetector(
+                              onTap: () => _showImageOptions(context, image.path),
+                              child: Stack(
+                                children: [
+                                  Container(
+                                    decoration: BoxDecoration(
+                                      border: Border.all(color: primaryColor, width: 2),
+                                    ),
+                                    child: Image.file(
+                                      File(image.path),
+                                      fit: BoxFit.cover,
+                                      width: 100,
+                                      height: 100,
                                     ),
                                   ),
-                                ),
+                                  Positioned(
+                                    top: 2,
+                                    right: 4,
+                                    child: Container(
+                                      padding: const EdgeInsets.all(6),
+                                      decoration: BoxDecoration(
+                                        color: Colors.black54,
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: Text(
+                                        '${index + 1}',
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  Positioned(
+                                    bottom: 2,
+                                    right: 4,
+                                    child: Icon(
+                                      Icons.zoom_out_map,
+                                      color: Colors.white,
+                                      size: 20,
+                                    ),
+                                  ),
+                                ],
                               ),
-                            ],
+                            ),
                           );
-                        },
+                        }).toList(),
                       ),
                     ),
                     Text(
@@ -230,7 +267,6 @@ class _CreateAuctionPageState extends State<CreateAuctionPage> {
                   ),
                 ),
               ),
-
               const SizedBox(height: 24),
               Center(
                 child: ElevatedButton(
@@ -245,9 +281,10 @@ class _CreateAuctionPageState extends State<CreateAuctionPage> {
                     width: 190,
                     child: Row(
                       children: [
-                        Icon(Icons.gpp_good_sharp,color: Colors.white,),
-                        SizedBox(width: 10,),
-                        Text('Kaydet ve Onaya Gönder',style: TextStyle(color: Colors.white,fontWeight: FontWeight.bold),),
+                        Icon(Icons.gpp_good_sharp, color: Colors.white),
+                        SizedBox(width: 10),
+                        Text('Kaydet ve Onaya Gönder',
+                            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                       ],
                     ),
                   ),
@@ -277,7 +314,7 @@ class _CreateAuctionPageState extends State<CreateAuctionPage> {
   Widget _buildTextField({
     required TextEditingController controller,
     required String label,
-    String? hintText, // 👈 yeni parametre
+    String? hintText,
     bool isRequired = false,
     int maxLines = 1,
     IconData? icon,
@@ -320,12 +357,10 @@ class _CreateAuctionPageState extends State<CreateAuctionPage> {
             maxLines: maxLines,
             validator: isRequired ? (value) => value!.isEmpty ? 'Zorunlu alan' : null : null,
           ),
-
         ],
       ),
     );
   }
-
 
   Widget _buildDisabledTextField({
     required TextEditingController controller,
@@ -352,7 +387,6 @@ class _CreateAuctionPageState extends State<CreateAuctionPage> {
           fillColor: Colors.grey[200],
         ),
         style: TextStyle(color: primaryColor),
-
       ),
     );
   }
@@ -392,7 +426,6 @@ class _CreateAuctionPageState extends State<CreateAuctionPage> {
             ),
           );
         }).toList(),
-
         selectedItemBuilder: (context) {
           return _categoryIcons.entries.map((entry) {
             return Row(
@@ -411,11 +444,9 @@ class _CreateAuctionPageState extends State<CreateAuctionPage> {
             );
           }).toList();
         },
-
         onChanged: (val) {
           setState(() => _selectedCategory = val);
         },
-
         decoration: InputDecoration(
           labelText: 'Kategori',
           prefixIcon: Icon(Icons.category, color: primaryColor),
@@ -437,7 +468,6 @@ class _CreateAuctionPageState extends State<CreateAuctionPage> {
       ),
     );
   }
-
 
   Widget _buildPriceField(String title, TextEditingController wholeController, TextEditingController fractionalController, IconData icon) {
     return Padding(
@@ -463,7 +493,6 @@ class _CreateAuctionPageState extends State<CreateAuctionPage> {
                 child: TextFormField(
                   controller: wholeController,
                   validator: (value) => (value == null || value.isEmpty) ? 'Zorunlu alan' : null,
-
                   keyboardType: TextInputType.number,
                   inputFormatters: [
                     FilteringTextInputFormatter.digitsOnly,
@@ -497,7 +526,6 @@ class _CreateAuctionPageState extends State<CreateAuctionPage> {
                 width: 70,
                 child: TextFormField(
                   validator: (value) => (value == null || value.isEmpty) ? 'Zorunlu alan' : null,
-
                   controller: fractionalController,
                   keyboardType: TextInputType.number,
                   maxLength: 2,
@@ -526,7 +554,6 @@ class _CreateAuctionPageState extends State<CreateAuctionPage> {
   }
 }
 
-// Helper class for currency formatting.
 class ThousandsFormatter extends TextInputFormatter {
   @override
   TextEditingValue formatEditUpdate(
