@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import '../../utils/colors.dart';
 import 'profile_pages/profile_info_page.dart';
 import 'profile_pages/change_password_page.dart';
 import 'profile_pages/email_verification_page.dart';
@@ -18,7 +19,6 @@ class ProfileScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const Color primaryColor = Color(0xFF1e529b);
 
     return FutureBuilder<Map<String, dynamic>?>(
       future: _getUserData(),
@@ -56,11 +56,11 @@ class ProfileScreen extends StatelessWidget {
             Center(
               child: CircleAvatar(
                 radius: 40,
-                backgroundColor: primaryColor,
+                backgroundColor: AppColors.primaryColor,
                 child: Text(
                   initials,
                   style: const TextStyle(
-                    color: Colors.white,
+                    color: AppColors.secondaryColor,
                     fontSize: 28,
                     fontWeight: FontWeight.bold,
                   ),
@@ -77,7 +77,7 @@ class ProfileScreen extends StatelessWidget {
                 style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  color: primaryColor,
+                  color: AppColors.primaryColor,
                 ),
               ),
             ),
@@ -100,7 +100,7 @@ class ProfileScreen extends StatelessWidget {
 
             // 🔹 Menü
             ListTile(
-              leading: const Icon(Icons.person_outline, color: primaryColor),
+              leading: const Icon(Icons.person_outline, color: AppColors.primaryColor),
               title: const Text('Bilgilerim'),
               onTap: () => Navigator.push(
                 context,
@@ -108,7 +108,7 @@ class ProfileScreen extends StatelessWidget {
               ),
             ),
             ListTile(
-              leading: const Icon(Icons.lock_outline, color: primaryColor),
+              leading: const Icon(Icons.lock_outline, color: AppColors.primaryColor),
               title: const Text('Şifremi Değiştir'),
               onTap: () => Navigator.push(
                 context,
@@ -116,7 +116,7 @@ class ProfileScreen extends StatelessWidget {
               ),
             ),
             ListTile(
-              leading: const Icon(Icons.verified_user_outlined, color: primaryColor),
+              leading: const Icon(Icons.verified_user_outlined, color: AppColors.primaryColor),
               title: const Text('E-Posta Onayı'),
               onTap: () => Navigator.push(
                 context,

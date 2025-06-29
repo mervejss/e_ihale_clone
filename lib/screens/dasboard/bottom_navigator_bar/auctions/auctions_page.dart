@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../../utils/colors.dart';
+
 class AuctionsPage extends StatefulWidget {
   const AuctionsPage({super.key});
 
@@ -8,7 +10,6 @@ class AuctionsPage extends StatefulWidget {
 }
 
 class _AuctionsPageState extends State<AuctionsPage> with SingleTickerProviderStateMixin {
-  final Color primaryColor = const Color(0xFF1e529b);
   late TabController _tabController;
   late ScrollController _scrollController;
 
@@ -65,7 +66,7 @@ class _AuctionsPageState extends State<AuctionsPage> with SingleTickerProviderSt
   Widget _buildTabBar() {
     return Container(
       height: 55,
-      color: primaryColor,
+      color: AppColors.primaryColor,
       child: Padding(
         padding: const EdgeInsets.only(left: 8, right: 8, bottom: 0),
         child: ListView.builder(
@@ -82,7 +83,7 @@ class _AuctionsPageState extends State<AuctionsPage> with SingleTickerProviderSt
                 margin: const EdgeInsets.symmetric(horizontal: 6),
                 padding: const EdgeInsets.symmetric(horizontal: 14),
                 decoration: BoxDecoration(
-                  color: isSelected ? Colors.white : Colors.transparent,
+                  color: isSelected ? AppColors.secondaryColor : Colors.transparent,
                   borderRadius: BorderRadius.circular(10),
                   boxShadow: isSelected
                       ? [
@@ -94,7 +95,7 @@ class _AuctionsPageState extends State<AuctionsPage> with SingleTickerProviderSt
                   ]
                       : [],
                   border: Border.all(
-                    color: isSelected ? Colors.white : Colors.transparent,
+                    color: isSelected ? AppColors.secondaryColor : Colors.transparent,
                     width: 1.5,
                   ),
                 ),
@@ -102,7 +103,7 @@ class _AuctionsPageState extends State<AuctionsPage> with SingleTickerProviderSt
                   child: AnimatedDefaultTextStyle(
                     duration: const Duration(milliseconds: 200),
                     style: TextStyle(
-                      color: isSelected ? primaryColor : Colors.white,
+                      color: isSelected ? AppColors.primaryColor : AppColors.secondaryColor,
                       fontWeight: FontWeight.bold,
                       fontSize: isSelected ? 18 : 14,
                     ),
@@ -125,7 +126,7 @@ class _AuctionsPageState extends State<AuctionsPage> with SingleTickerProviderSt
     return DefaultTabController(
       length: tabs.length,
       child: Scaffold(
-        backgroundColor: Colors.white,
+        backgroundColor: AppColors.secondaryColor,
         appBar: PreferredSize(
           preferredSize: const Size.fromHeight(55),
           child: _buildTabBar(),

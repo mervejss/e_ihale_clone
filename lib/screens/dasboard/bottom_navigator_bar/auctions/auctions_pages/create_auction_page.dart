@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
+import '../../../../../utils/colors.dart';
 
 class CreateAuctionPage extends StatefulWidget {
   const CreateAuctionPage({super.key});
@@ -43,8 +44,7 @@ class _CreateAuctionPageState extends State<CreateAuctionPage> {
     'Teknik parça': Icons.build,
   };
 
-  final Color primaryColor = const Color(0xFF1e529b);
-  final Color secondaryColor = Colors.white;
+
   bool _photoError = false;
 
   void _updateDeposit() {
@@ -137,12 +137,12 @@ class _CreateAuctionPageState extends State<CreateAuctionPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: secondaryColor,
+      backgroundColor: AppColors.secondaryColor,
       appBar: AppBar(
-        title: const Text('Yeni İhale Ekle', style: TextStyle(color: Colors.white)),
+        title: const Text('Yeni İhale Ekle', style: TextStyle(color: AppColors.secondaryColor)),
         centerTitle: true,
-        backgroundColor: primaryColor,
-        foregroundColor: Colors.white,
+        backgroundColor: AppColors.primaryColor,
+        foregroundColor:  AppColors.secondaryColor,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -197,7 +197,7 @@ class _CreateAuctionPageState extends State<CreateAuctionPage> {
                 children: [
                   ElevatedButton.icon(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: primaryColor,
+                      backgroundColor: AppColors.primaryColor,
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -205,8 +205,8 @@ class _CreateAuctionPageState extends State<CreateAuctionPage> {
                       elevation: 3,
                     ),
                     onPressed: _pickImages,
-                    icon: const Icon(Icons.image, color: Colors.white),
-                    label: const Text('Fotoğraf Seç', style: TextStyle(color: Colors.white)),
+                    icon: const Icon(Icons.image, color: AppColors.secondaryColor),
+                    label: const Text('Fotoğraf Seç', style: TextStyle(color: AppColors.secondaryColor)),
                   ),
                   const SizedBox(width: 12),
                   if (_selectedImages != null && _selectedImages!.isNotEmpty)
@@ -275,7 +275,7 @@ class _CreateAuctionPageState extends State<CreateAuctionPage> {
                                 children: [
                                   Container(
                                     decoration: BoxDecoration(
-                                      border: Border.all(color: primaryColor, width: 2),
+                                      border: Border.all(color: AppColors.primaryColor, width: 2),
                                     ),
                                     child: Image.file(
                                       File(image.path),
@@ -296,7 +296,7 @@ class _CreateAuctionPageState extends State<CreateAuctionPage> {
                                       child: Text(
                                         '${index + 1}',
                                         style: const TextStyle(
-                                          color: Colors.white,
+                                          color: AppColors.secondaryColor,
                                           fontWeight: FontWeight.bold,
                                         ),
                                       ),
@@ -307,7 +307,7 @@ class _CreateAuctionPageState extends State<CreateAuctionPage> {
                                     right: 4,
                                     child: Icon(
                                       Icons.zoom_out_map,
-                                      color: Colors.white,
+                                      color: AppColors.secondaryColor,
                                       size: 20,
                                     ),
                                   ),
@@ -339,7 +339,7 @@ class _CreateAuctionPageState extends State<CreateAuctionPage> {
                     : Text(
                   'Fotoğraf seçilmedi',
                   style: TextStyle(
-                    color: primaryColor,
+                    color: AppColors.primaryColor,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -348,7 +348,7 @@ class _CreateAuctionPageState extends State<CreateAuctionPage> {
               Center(
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: primaryColor,
+                    backgroundColor: AppColors.primaryColor,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(18.0),
                     ),
@@ -358,10 +358,10 @@ class _CreateAuctionPageState extends State<CreateAuctionPage> {
                     width: 190,
                     child: Row(
                       children: [
-                        Icon(Icons.gpp_good_sharp, color: Colors.white),
+                        Icon(Icons.gpp_good_sharp, color: AppColors.secondaryColor),
                         SizedBox(width: 10),
                         Text('Kaydet ve Onaya Gönder',
-                            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                            style: TextStyle(color: AppColors.secondaryColor, fontWeight: FontWeight.bold)),
                       ],
                     ),
                   ),
@@ -382,7 +382,7 @@ class _CreateAuctionPageState extends State<CreateAuctionPage> {
         style: TextStyle(
           fontSize: 18,
           fontWeight: FontWeight.bold,
-          color: primaryColor,
+          color: AppColors.primaryColor,
         ),
       ),
     );
@@ -415,7 +415,7 @@ class _CreateAuctionPageState extends State<CreateAuctionPage> {
           TextFormField(
             controller: controller,
             decoration: InputDecoration(
-              prefixIcon: icon != null ? Icon(icon, color: primaryColor) : null,
+              prefixIcon: icon != null ? Icon(icon, color: AppColors.primaryColor) : null,
               hintText: hintText,
               hintStyle: const TextStyle(
                 color: Colors.grey,
@@ -423,11 +423,11 @@ class _CreateAuctionPageState extends State<CreateAuctionPage> {
                 fontSize: 14,
               ),
               border: OutlineInputBorder(
-                borderSide: BorderSide(color: primaryColor),
+                borderSide: BorderSide(color: AppColors.primaryColor),
                 borderRadius: BorderRadius.circular(10.0),
               ),
               filled: true,
-              fillColor: Colors.white,
+              fillColor: AppColors.secondaryColor,
               contentPadding: const EdgeInsets.symmetric(vertical: 16.0, horizontal: 12.0),
             ),
             style: const TextStyle(color: Colors.black),
@@ -460,19 +460,19 @@ class _CreateAuctionPageState extends State<CreateAuctionPage> {
         enabled: false,
         decoration: InputDecoration(
           labelText: label,
-          prefixIcon: Icon(icon, color: primaryColor),
+          prefixIcon: Icon(icon, color: AppColors.primaryColor),
           border: OutlineInputBorder(
-            borderSide: BorderSide(color: primaryColor),
+            borderSide: BorderSide(color: AppColors.primaryColor),
             borderRadius: BorderRadius.circular(8.0),
           ),
           labelStyle: TextStyle(
             fontWeight: FontWeight.bold,
-            color: primaryColor,
+            color: AppColors.primaryColor,
           ),
           filled: true,
           fillColor: Colors.grey[200],
         ),
-        style: TextStyle(color: primaryColor),
+        style: TextStyle(color: AppColors.primaryColor),
       ),
     );
   }
@@ -501,7 +501,7 @@ class _CreateAuctionPageState extends State<CreateAuctionPage> {
               ),
               child: Row(
                 children: [
-                  Icon(entry.value, color: primaryColor),
+                  Icon(entry.value, color: AppColors.primaryColor),
                   const SizedBox(width: 10),
                   Text(
                     entry.key,
@@ -516,13 +516,13 @@ class _CreateAuctionPageState extends State<CreateAuctionPage> {
           return _categoryIcons.entries.map((entry) {
             return Row(
               children: [
-                Icon(entry.value, color: primaryColor),
+                Icon(entry.value, color: AppColors.primaryColor),
                 const SizedBox(width: 8),
                 Text(
                   entry.key,
                   style: TextStyle(
                     fontSize: 16,
-                    color: primaryColor,
+                    color: AppColors.primaryColor,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -535,21 +535,21 @@ class _CreateAuctionPageState extends State<CreateAuctionPage> {
         },
         decoration: InputDecoration(
           labelText: 'Kategori',
-          prefixIcon: Icon(Icons.category, color: primaryColor),
+          prefixIcon: Icon(Icons.category, color: AppColors.primaryColor),
           border: OutlineInputBorder(
-            borderSide: BorderSide(color: primaryColor),
+            borderSide: BorderSide(color: AppColors.primaryColor),
             borderRadius: BorderRadius.circular(12.0),
           ),
           labelStyle: TextStyle(
             fontWeight: FontWeight.bold,
-            color: primaryColor,
+            color: AppColors.primaryColor,
           ),
           filled: true,
-          fillColor: Colors.white,
+          fillColor: AppColors.secondaryColor,
         ),
         icon: const Icon(Icons.arrow_drop_down, color: Colors.black87),
-        dropdownColor: Colors.white,
-        style: TextStyle(color: primaryColor, fontWeight: FontWeight.w600),
+        dropdownColor: AppColors.secondaryColor,
+        style: TextStyle(color: AppColors.primaryColor, fontWeight: FontWeight.w600),
         validator: (value) {
           if (value == null) {
             setState(() {});
@@ -596,15 +596,15 @@ class _CreateAuctionPageState extends State<CreateAuctionPage> {
                     ThousandsFormatter(),
                   ],
                   decoration: InputDecoration(
-                    prefixIcon: Icon(icon, color: primaryColor),
+                    prefixIcon: Icon(icon, color: AppColors.primaryColor),
                     border: OutlineInputBorder(
-                      borderSide: BorderSide(color: primaryColor),
+                      borderSide: BorderSide(color: AppColors.primaryColor),
                       borderRadius: BorderRadius.circular(8.0),
                     ),
                     filled: true,
-                    fillColor: Colors.white,
+                    fillColor: AppColors.secondaryColor,
                   ),
-                  style: TextStyle(color: primaryColor),
+                  style: TextStyle(color: AppColors.primaryColor),
                   onChanged: (_) => setState(() {
                     _updateDeposit();
                     _formKey.currentState!.validate(); // Trigger revalidation
@@ -637,13 +637,13 @@ class _CreateAuctionPageState extends State<CreateAuctionPage> {
                     counterText: '',
                     suffixText: '₺',
                     border: OutlineInputBorder(
-                      borderSide: BorderSide(color: primaryColor),
+                      borderSide: BorderSide(color: AppColors.primaryColor),
                       borderRadius: BorderRadius.circular(8.0),
                     ),
                     filled: true,
-                    fillColor: Colors.white,
+                    fillColor: AppColors.secondaryColor,
                   ),
-                  style: TextStyle(color: primaryColor),
+                  style: TextStyle(color: AppColors.primaryColor),
                   onChanged: (_) => setState(() {
                     _updateDeposit();
                     _formKey.currentState!.validate(); // Trigger revalidation

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
+import '../../../utils/colors.dart';
+
 class ProfileInfoPage extends StatelessWidget {
   const ProfileInfoPage({super.key});
 
@@ -44,7 +46,6 @@ class ProfileInfoPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const Color primaryColor = Color(0xFF1e529b);
 
     return Scaffold(
       appBar: AppBar(
@@ -81,24 +82,23 @@ class ProfileInfoPage extends StatelessWidget {
   }
 
   Widget _buildInfoTile(BuildContext context, String title, String? value, IconData icon, bool editable) {
-    const Color primaryColor = Color(0xFF1e529b);
 
     return Card(
       elevation: 2,
       margin: const EdgeInsets.symmetric(vertical: 8),
       child: ListTile(
-        leading: Icon(icon, color: primaryColor),
+        leading: Icon(icon, color: AppColors.primaryColor),
         title: Text(
           title,
           style: const TextStyle(
             fontWeight: FontWeight.bold,
-            color: primaryColor,
+            color: AppColors.primaryColor,
           ),
         ),
         subtitle: Text(value ?? ''),
         trailing: editable
             ? IconButton(
-          icon: const Icon(Icons.edit, color: primaryColor),
+          icon: const Icon(Icons.edit, color: AppColors.primaryColor),
           onPressed: () => _editField(context, title, value ?? ''),
         )
             : null,
