@@ -40,6 +40,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: primaryColor,
+        foregroundColor:Colors.white,
+
         title: const Text('Teklifin Gelsin',style: TextStyle(color: Colors.white),),
         actions: [
           /*IconButton(

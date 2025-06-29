@@ -58,11 +58,40 @@ class _CreateAuctionPageState extends State<CreateAuctionPage> {
   Future<void> _pickImages() async {
     final ImagePicker picker = ImagePicker();
     final List<XFile>? images = await picker.pickMultiImage();
-    if (images != null && images.length <= 10) {
-      setState(() {
-        _selectedImages = images;
-      });
+    if (images != null) {
+      if (images.length > 10) {
+        _showImageAlert('En fazla 10 resim seçebilirsiniz.');
+      } else if (images.isEmpty) {
+        _showImageAlert('En az 1 resim seçmelisiniz.');
+      } else {
+        setState(() {
+          _selectedImages = images;
+          _photoError = false;
+        });
+      }
     }
+  }
+
+  void _removeAllImages() {
+    setState(() {
+      _selectedImages!.clear();
+      _photoError = true;
+    });
+  }
+
+  void _showImageAlert(String message) {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Tamam'),
+          ),
+        ],
+      ),
+    );
   }
 
   void _submitForm() {
@@ -115,6 +144,7 @@ class _CreateAuctionPageState extends State<CreateAuctionPage> {
         title: const Text('Yeni İhale Ekle', style: TextStyle(color: Colors.white)),
         centerTitle: true,
         backgroundColor: primaryColor,
+        foregroundColor: Colors.white,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -168,26 +198,63 @@ class _CreateAuctionPageState extends State<CreateAuctionPage> {
               Row(
                 children: [
                   ElevatedButton.icon(
-                    style: ElevatedButton.styleFrom(backgroundColor: primaryColor),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: primaryColor,
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      elevation: 3,
+                    ),
                     onPressed: _pickImages,
                     icon: const Icon(Icons.image, color: Colors.white),
                     label: const Text('Fotoğraf Seç', style: TextStyle(color: Colors.white)),
                   ),
+                  const SizedBox(width: 12),
+                  if (_selectedImages != null && _selectedImages!.isNotEmpty)
+                    InkWell(
+                      onTap: _removeAllImages,
+                      borderRadius: BorderRadius.circular(12),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: Colors.red.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.red.shade700, width: 1.5),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.highlight_remove_sharp, color: Colors.red.shade700, size: 22),
+                            const SizedBox(width: 3),
+                            Text(
+                              'Seçili fotoğrafların tümünü kaldır',
+                              style: TextStyle(
+                                color: Colors.red.shade700,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 11,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                 ],
               ),
               if (_photoError)
                 Padding(
                   padding: const EdgeInsets.only(top: 6, left: 4),
                   child: Text(
-                    'Zorunlu alan',
+                    'En az 1 resim seçmelisiniz.',
                     style: TextStyle(color: Colors.red[700], fontSize: 12),
                   ),
                 ),
               const SizedBox(height: 12),
               SizedBox(
-                height: 120,
+                height: 150,
                 child: _selectedImages != null && _selectedImages!.isNotEmpty
                     ? Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Expanded(
                       child: ReorderableListView(
@@ -253,9 +320,13 @@ class _CreateAuctionPageState extends State<CreateAuctionPage> {
                         }).toList(),
                       ),
                     ),
-                    Text(
-                      '${_selectedImages!.length} fotoğraf seçildi',
-                      style: TextStyle(color: primaryColor),
+                    const Text(
+                      'Fotoğrafları kaydırarak sıralamasını değiştirebilirsiniz.',
+                      style: TextStyle(
+                        color: Colors.grey,
+                        fontStyle: FontStyle.italic,
+                        fontSize: 12,
+                      ),
                     ),
                   ],
                 )
@@ -355,7 +426,16 @@ class _CreateAuctionPageState extends State<CreateAuctionPage> {
             ),
             style: const TextStyle(color: Colors.black),
             maxLines: maxLines,
-            validator: isRequired ? (value) => value!.isEmpty ? 'Zorunlu alan' : null : null,
+            validator: isRequired ? (value) {
+              if (value == null || value.isEmpty) {
+                return 'Zorunlu alan';
+              }
+              return null;
+            } : null,
+            onChanged: (_) {
+              _formKey.currentState!.validate(); // Trigger revalidation
+              setState(() {}); // Close error message if any
+            },
           ),
         ],
       ),
@@ -464,7 +544,13 @@ class _CreateAuctionPageState extends State<CreateAuctionPage> {
         icon: const Icon(Icons.arrow_drop_down, color: Colors.black87),
         dropdownColor: Colors.white,
         style: TextStyle(color: primaryColor, fontWeight: FontWeight.w600),
-        validator: (value) => value == null ? 'Zorunlu alan' : null,
+        validator: (value) {
+          if (value == null) {
+            setState(() {});
+            return 'Zorunlu alan';
+          }
+          return null;
+        },
       ),
     );
   }
@@ -492,7 +578,12 @@ class _CreateAuctionPageState extends State<CreateAuctionPage> {
               Expanded(
                 child: TextFormField(
                   controller: wholeController,
-                  validator: (value) => (value == null || value.isEmpty) ? 'Zorunlu alan' : null,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Zorunlu alan';
+                    }
+                    return null;
+                  },
                   keyboardType: TextInputType.number,
                   inputFormatters: [
                     FilteringTextInputFormatter.digitsOnly,
@@ -510,6 +601,7 @@ class _CreateAuctionPageState extends State<CreateAuctionPage> {
                   style: TextStyle(color: primaryColor),
                   onChanged: (_) => setState(() {
                     _updateDeposit();
+                    _formKey.currentState!.validate(); // Trigger revalidation
                   }),
                 ),
               ),
@@ -525,7 +617,12 @@ class _CreateAuctionPageState extends State<CreateAuctionPage> {
               SizedBox(
                 width: 70,
                 child: TextFormField(
-                  validator: (value) => (value == null || value.isEmpty) ? 'Zorunlu alan' : null,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Zorunlu alan';
+                    }
+                    return null;
+                  },
                   controller: fractionalController,
                   keyboardType: TextInputType.number,
                   maxLength: 2,
@@ -543,6 +640,7 @@ class _CreateAuctionPageState extends State<CreateAuctionPage> {
                   style: TextStyle(color: primaryColor),
                   onChanged: (_) => setState(() {
                     _updateDeposit();
+                    _formKey.currentState!.validate(); // Trigger revalidation
                   }),
                 ),
               ),
