@@ -1,9 +1,9 @@
 import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
+import '../../../../../utils/colors.dart';
 
 class CreateAuctionPage extends StatefulWidget {
   const CreateAuctionPage({super.key});
@@ -35,6 +35,7 @@ class _CreateAuctionPageState extends State<CreateAuctionPage> {
     'Anakart',
     'Teknik parça',
   ];
+
   final Map<String, IconData> _categoryIcons = {
     'Telefon': Icons.phone_android,
     'Bilgisayar': Icons.computer,
@@ -43,8 +44,8 @@ class _CreateAuctionPageState extends State<CreateAuctionPage> {
     'Teknik parça': Icons.build,
   };
 
-  final Color primaryColor = const Color(0xFF1e529b);
-  final Color secondaryColor = Colors.white;
+
+  bool _photoError = false;
 
   void _updateDeposit() {
     String whole = _startPriceWholeController.text.replaceAll('.', '');
@@ -57,17 +58,50 @@ class _CreateAuctionPageState extends State<CreateAuctionPage> {
   Future<void> _pickImages() async {
     final ImagePicker picker = ImagePicker();
     final List<XFile>? images = await picker.pickMultiImage();
-    if (images != null && images.length <= 10) {
-      setState(() {
-        _selectedImages = images;
-      });
+    if (images != null) {
+      if (images.length > 10) {
+        _showImageAlert('En fazla 10 resim seçebilirsiniz.');
+      } else {
+        setState(() {
+          _selectedImages = images;
+          _photoError = false;
+        });
+      }
     }
   }
 
+  void _removeAllImages() {
+    setState(() {
+      _selectedImages!.clear();
+      _photoError = true;
+    });
+  }
+
+  void _showImageAlert(String message) {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Tamam'),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _submitForm() {
-    if (_formKey.currentState!.validate()) {
-      final now = DateTime.now();
-      final formattedDate = DateFormat('dd.MM.yyyy HH:mm:ss').format(now);
+    final isValid = _formKey.currentState!.validate();
+
+    setState(() {
+      _photoError = _selectedImages == null || _selectedImages!.isEmpty;
+    });
+
+    if (isValid && !_photoError) {
+      final now = DateTime.now().toLocal();
+      final formattedDate = DateFormat('dd.MM.yyyy HH:mm:ss', 'tr_TR').format(now);
 
       print("Ürün Adı: ${_productNameController.text}");
       print("Marka: ${_brandController.text}");
@@ -82,14 +116,33 @@ class _CreateAuctionPageState extends State<CreateAuctionPage> {
     }
   }
 
+  void _showImageOptions(BuildContext context, String path) {
+    showDialog(
+      context: context,
+      builder: (_) => Dialog(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Image.file(File(path)),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Kapat'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: secondaryColor,
+      backgroundColor: AppColors.secondaryColor,
       appBar: AppBar(
-        title: const Text('Yeni İhale Ekle', style: TextStyle(color: Colors.white)),
+        title: const Text('Yeni İhale Ekle', style: TextStyle(color: AppColors.secondaryColor)),
         centerTitle: true,
-        backgroundColor: primaryColor,
+        backgroundColor: AppColors.primaryColor,
+        foregroundColor:  AppColors.secondaryColor,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -102,24 +155,31 @@ class _CreateAuctionPageState extends State<CreateAuctionPage> {
               _buildTextField(
                 controller: _productNameController,
                 label: 'Ürün Adı',
+                hintText: 'Ürün adını buraya giriniz',
                 icon: Icons.label,
                 isRequired: true,
               ),
               _buildTextField(
                 controller: _brandController,
                 label: 'Marka',
+                hintText: 'Ürün markasını buraya giriniz',
                 icon: Icons.branding_watermark,
+                isRequired: true,
               ),
               _buildTextField(
                 controller: _modelController,
                 label: 'Model',
+                hintText: 'Ürün modelini buraya giriniz',
                 icon: Icons.device_hub,
+                isRequired: true,
               ),
               _buildTextField(
                 controller: _descriptionController,
                 label: 'Açıklama',
+                hintText: 'Ürün açıklamasını buraya giriniz',
                 icon: Icons.description,
                 maxLines: 2,
+                isRequired: true,
               ),
               _buildSectionHeader('Kategori Seçimi'),
               _buildDropdownCategory(),
@@ -136,68 +196,150 @@ class _CreateAuctionPageState extends State<CreateAuctionPage> {
               Row(
                 children: [
                   ElevatedButton.icon(
-                    style: ElevatedButton.styleFrom(backgroundColor: primaryColor),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primaryColor,
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      elevation: 3,
+                    ),
                     onPressed: _pickImages,
-                    icon: const Icon(Icons.image, color: Colors.white),
-                    label: const Text('Fotoğraf Seç', style: TextStyle(color: Colors.white)),
+                    icon: const Icon(Icons.image, color: AppColors.secondaryColor),
+                    label: const Text('Fotoğraf Seç', style: TextStyle(color: AppColors.secondaryColor)),
                   ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              SizedBox(
-                height: 120,
-                child: _selectedImages != null && _selectedImages!.isNotEmpty
-                    ? Column(
-                  children: [
-                    Expanded(
-                      child: ListView.builder(
-                        scrollDirection: Axis.horizontal,
-                        itemCount: _selectedImages!.length,
-                        itemBuilder: (context, index) {
-                          return Stack(
-                            children: [
-                              Container(
-                                margin: const EdgeInsets.all(4.0),
-                                decoration: BoxDecoration(
-                                  border: Border.all(color: primaryColor, width: 2),
-                                ),
-                                child: Image.file(
-                                  File(_selectedImages![index].path),
-                                  fit: BoxFit.cover,
-                                  width: 100,
-                                  height: 100,
-                                ),
+                  const SizedBox(width: 12),
+                  if (_selectedImages != null && _selectedImages!.isNotEmpty)
+                    InkWell(
+                      onTap: _removeAllImages,
+                      borderRadius: BorderRadius.circular(12),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: Colors.red.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.red.shade700, width: 1.5),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.highlight_remove_sharp, color: Colors.red.shade700, size: 22),
+                            const SizedBox(width: 3),
+                            Text(
+                              'Seçili fotoğrafların tümünü kaldır',
+                              style: TextStyle(
+                                color: Colors.red.shade700,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 11,
                               ),
-                              Positioned(
-                                top: 2,
-                                right: 2,
-                                child: CircleAvatar(
-                                  radius: 12,
-                                  backgroundColor: primaryColor,
-                                  child: Text(
-                                    (index + 1).toString(),
-                                    style: TextStyle(
-                                      color: secondaryColor,
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          );
-                        },
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                    Text(
-                      '${_selectedImages!.length} fotoğraf seçildi',
-                      style: TextStyle(color: primaryColor),
+                ],
+              ),
+              if (_photoError)
+                Padding(
+                  padding: const EdgeInsets.only(top: 6, left: 4),
+                  child: Text(
+                    'En az 1 resim seçmelisiniz.',
+                    style: TextStyle(color: Colors.red[700], fontSize: 12),
+                  ),
+                ),
+              const SizedBox(height: 12),
+              SizedBox(
+                height: 150,
+                child: _selectedImages != null && _selectedImages!.isNotEmpty
+                    ? Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: ReorderableListView(
+                        scrollDirection: Axis.horizontal,
+                        onReorder: (oldIndex, newIndex) {
+                          setState(() {
+                            if (newIndex > oldIndex) newIndex -= 1;
+                            final item = _selectedImages!.removeAt(oldIndex);
+                            _selectedImages!.insert(newIndex, item);
+                          });
+                        },
+                        children: _selectedImages!.map((image) {
+                          final index = _selectedImages!.indexOf(image);
+                          return Container(
+                            key: ValueKey(image),
+                            margin: const EdgeInsets.all(4.0),
+                            child: GestureDetector(
+                              onTap: () => _showImageOptions(context, image.path),
+                              child: Stack(
+                                children: [
+                                  Container(
+                                    decoration: BoxDecoration(
+                                      border: Border.all(color: AppColors.primaryColor, width: 2),
+                                    ),
+                                    child: Image.file(
+                                      File(image.path),
+                                      fit: BoxFit.cover,
+                                      width: 100,
+                                      height: 100,
+                                    ),
+                                  ),
+                                  Positioned(
+                                    top: 2,
+                                    right: 4,
+                                    child: Container(
+                                      padding: const EdgeInsets.all(6),
+                                      decoration: BoxDecoration(
+                                        color: Colors.black54,
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: Text(
+                                        '${index + 1}',
+                                        style: const TextStyle(
+                                          color: AppColors.secondaryColor,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  const Positioned(
+                                    bottom: 2,
+                                    right: 4,
+                                    child: Icon(
+                                      Icons.zoom_out_map,
+                                      color: AppColors.secondaryColor,
+                                      size: 20,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    ),
+                    const Text(
+                      'Fotoğrafları kaydırarak sıralamasını değiştirebilirsiniz.',
+                      style: TextStyle(
+                        color: Colors.grey,
+                        fontStyle: FontStyle.italic,
+                        fontSize: 12,
+                      ),
+                    ),
+                    const Text(
+                      'Fotoğraflara tıklayarak ise yüklediğiniz fotoğrafı daha büyük boyutta görüntüleyebilir ve inceleyebilirsiniz.',
+                      style: TextStyle(
+                        color: Colors.grey,
+                        fontStyle: FontStyle.italic,
+                        fontSize: 12,
+                      ),
                     ),
                   ],
                 )
                     : Text(
                   'Fotoğraf seçilmedi',
                   style: TextStyle(
-                    color: primaryColor,
+                    color: AppColors.primaryColor,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -206,7 +348,7 @@ class _CreateAuctionPageState extends State<CreateAuctionPage> {
               Center(
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: primaryColor,
+                    backgroundColor: AppColors.primaryColor,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(18.0),
                     ),
@@ -216,9 +358,10 @@ class _CreateAuctionPageState extends State<CreateAuctionPage> {
                     width: 190,
                     child: Row(
                       children: [
-                        Icon(Icons.gpp_good_sharp,color: Colors.white,),
-                        SizedBox(width: 10,),
-                        Text('Kaydet ve Onaya Gönder',style: TextStyle(color: Colors.white,fontWeight: FontWeight.bold),),
+                        Icon(Icons.gpp_good_sharp, color: AppColors.secondaryColor),
+                        SizedBox(width: 10),
+                        Text('Kaydet ve Onaya Gönder',
+                            style: TextStyle(color: AppColors.secondaryColor, fontWeight: FontWeight.bold)),
                       ],
                     ),
                   ),
@@ -239,7 +382,7 @@ class _CreateAuctionPageState extends State<CreateAuctionPage> {
         style: TextStyle(
           fontSize: 18,
           fontWeight: FontWeight.bold,
-          color: primaryColor,
+          color: AppColors.primaryColor,
         ),
       ),
     );
@@ -248,6 +391,7 @@ class _CreateAuctionPageState extends State<CreateAuctionPage> {
   Widget _buildTextField({
     required TextEditingController controller,
     required String label,
+    String? hintText,
     bool isRequired = false,
     int maxLines = 1,
     IconData? icon,
@@ -261,7 +405,7 @@ class _CreateAuctionPageState extends State<CreateAuctionPage> {
             padding: const EdgeInsets.only(bottom: 6.0, left: 4),
             child: Text(
               label,
-              style: TextStyle(
+              style: const TextStyle(
                 fontWeight: FontWeight.w600,
                 fontSize: 16,
                 color: Colors.black87,
@@ -271,20 +415,33 @@ class _CreateAuctionPageState extends State<CreateAuctionPage> {
           TextFormField(
             controller: controller,
             decoration: InputDecoration(
-              prefixIcon: Icon(icon, color: primaryColor),
+              prefixIcon: icon != null ? Icon(icon, color: AppColors.primaryColor) : null,
+              hintText: hintText,
+              hintStyle: const TextStyle(
+                color: Colors.grey,
+                fontStyle: FontStyle.italic,
+                fontSize: 14,
+              ),
               border: OutlineInputBorder(
-                borderSide: BorderSide(color: primaryColor),
+                borderSide: BorderSide(color: AppColors.primaryColor),
                 borderRadius: BorderRadius.circular(10.0),
               ),
               filled: true,
-              fillColor: Colors.white,
+              fillColor: AppColors.secondaryColor,
               contentPadding: const EdgeInsets.symmetric(vertical: 16.0, horizontal: 12.0),
             ),
-            style: TextStyle(color: Colors.black),
+            style: const TextStyle(color: Colors.black),
             maxLines: maxLines,
-            validator: isRequired
-                ? (value) => value!.isEmpty ? 'Zorunlu alan' : null
-                : null,
+            validator: isRequired ? (value) {
+              if (value == null || value.isEmpty) {
+                return 'Zorunlu alan';
+              }
+              return null;
+            } : null,
+            onChanged: (_) {
+              _formKey.currentState!.validate(); // Trigger revalidation
+              setState(() {});
+            },
           ),
         ],
       ),
@@ -303,19 +460,19 @@ class _CreateAuctionPageState extends State<CreateAuctionPage> {
         enabled: false,
         decoration: InputDecoration(
           labelText: label,
-          prefixIcon: Icon(icon, color: primaryColor),
+          prefixIcon: Icon(icon, color: AppColors.primaryColor),
           border: OutlineInputBorder(
-            borderSide: BorderSide(color: primaryColor),
+            borderSide: BorderSide(color: AppColors.primaryColor),
             borderRadius: BorderRadius.circular(8.0),
           ),
           labelStyle: TextStyle(
             fontWeight: FontWeight.bold,
-            color: primaryColor,
+            color: AppColors.primaryColor,
           ),
           filled: true,
           fillColor: Colors.grey[200],
         ),
-        style: TextStyle(color: primaryColor),
+        style: TextStyle(color: AppColors.primaryColor),
       ),
     );
   }
@@ -344,7 +501,7 @@ class _CreateAuctionPageState extends State<CreateAuctionPage> {
               ),
               child: Row(
                 children: [
-                  Icon(entry.value, color: primaryColor),
+                  Icon(entry.value, color: AppColors.primaryColor),
                   const SizedBox(width: 10),
                   Text(
                     entry.key,
@@ -355,18 +512,17 @@ class _CreateAuctionPageState extends State<CreateAuctionPage> {
             ),
           );
         }).toList(),
-
         selectedItemBuilder: (context) {
           return _categoryIcons.entries.map((entry) {
             return Row(
               children: [
-                Icon(entry.value, color: primaryColor),
+                Icon(entry.value, color: AppColors.primaryColor),
                 const SizedBox(width: 8),
                 Text(
                   entry.key,
                   style: TextStyle(
                     fontSize: 16,
-                    color: primaryColor,
+                    color: AppColors.primaryColor,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -374,33 +530,36 @@ class _CreateAuctionPageState extends State<CreateAuctionPage> {
             );
           }).toList();
         },
-
         onChanged: (val) {
           setState(() => _selectedCategory = val);
         },
-
         decoration: InputDecoration(
           labelText: 'Kategori',
-          prefixIcon: Icon(Icons.category, color: primaryColor),
+          prefixIcon: Icon(Icons.category, color: AppColors.primaryColor),
           border: OutlineInputBorder(
-            borderSide: BorderSide(color: primaryColor),
+            borderSide: BorderSide(color: AppColors.primaryColor),
             borderRadius: BorderRadius.circular(12.0),
           ),
           labelStyle: TextStyle(
             fontWeight: FontWeight.bold,
-            color: primaryColor,
+            color: AppColors.primaryColor,
           ),
           filled: true,
-          fillColor: Colors.white,
+          fillColor: AppColors.secondaryColor,
         ),
         icon: const Icon(Icons.arrow_drop_down, color: Colors.black87),
-        dropdownColor: Colors.white,
-        style: TextStyle(color: primaryColor, fontWeight: FontWeight.w600),
-        validator: (value) => value == null ? 'Zorunlu alan' : null,
+        dropdownColor: AppColors.secondaryColor,
+        style: TextStyle(color: AppColors.primaryColor, fontWeight: FontWeight.w600),
+        validator: (value) {
+          if (value == null) {
+            setState(() {});
+            return 'Zorunlu alan';
+          }
+          return null;
+        },
       ),
     );
   }
-
 
   Widget _buildPriceField(String title, TextEditingController wholeController, TextEditingController fractionalController, IconData icon) {
     return Padding(
@@ -425,23 +584,30 @@ class _CreateAuctionPageState extends State<CreateAuctionPage> {
               Expanded(
                 child: TextFormField(
                   controller: wholeController,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Zorunlu alan';
+                    }
+                    return null;
+                  },
                   keyboardType: TextInputType.number,
                   inputFormatters: [
                     FilteringTextInputFormatter.digitsOnly,
                     ThousandsFormatter(),
                   ],
                   decoration: InputDecoration(
-                    prefixIcon: Icon(icon, color: primaryColor),
+                    prefixIcon: Icon(icon, color: AppColors.primaryColor),
                     border: OutlineInputBorder(
-                      borderSide: BorderSide(color: primaryColor),
+                      borderSide: BorderSide(color: AppColors.primaryColor),
                       borderRadius: BorderRadius.circular(8.0),
                     ),
                     filled: true,
-                    fillColor: Colors.white,
+                    fillColor: AppColors.secondaryColor,
                   ),
-                  style: TextStyle(color: primaryColor),
+                  style: TextStyle(color: AppColors.primaryColor),
                   onChanged: (_) => setState(() {
                     _updateDeposit();
+                    _formKey.currentState!.validate(); // Trigger revalidation
                   }),
                 ),
               ),
@@ -457,6 +623,12 @@ class _CreateAuctionPageState extends State<CreateAuctionPage> {
               SizedBox(
                 width: 70,
                 child: TextFormField(
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Zorunlu alan';
+                    }
+                    return null;
+                  },
                   controller: fractionalController,
                   keyboardType: TextInputType.number,
                   maxLength: 2,
@@ -465,15 +637,16 @@ class _CreateAuctionPageState extends State<CreateAuctionPage> {
                     counterText: '',
                     suffixText: '₺',
                     border: OutlineInputBorder(
-                      borderSide: BorderSide(color: primaryColor),
+                      borderSide: BorderSide(color: AppColors.primaryColor),
                       borderRadius: BorderRadius.circular(8.0),
                     ),
                     filled: true,
-                    fillColor: Colors.white,
+                    fillColor: AppColors.secondaryColor,
                   ),
-                  style: TextStyle(color: primaryColor),
+                  style: TextStyle(color: AppColors.primaryColor),
                   onChanged: (_) => setState(() {
                     _updateDeposit();
+                    _formKey.currentState!.validate(); // Trigger revalidation
                   }),
                 ),
               ),
@@ -485,7 +658,6 @@ class _CreateAuctionPageState extends State<CreateAuctionPage> {
   }
 }
 
-// Helper class for currency formatting.
 class ThousandsFormatter extends TextInputFormatter {
   @override
   TextEditingValue formatEditUpdate(
