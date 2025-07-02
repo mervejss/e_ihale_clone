@@ -29,4 +29,44 @@ class FirestoreService {
 
     });
   }
+
+
+  // İhale oluşturma fonksiyonu
+  Future<void> createAuction({
+    required String createdBy,
+    required String productName,
+    required String brand,
+    required String model,
+    required String description,
+    required String startPrice,
+    required String minBid,
+    required String category,
+    required String deposit,
+    required List<String> imageUrls,
+    required DateTime createdAt,
+  }) async {
+    final auctionDoc = _db.collection('auctions').doc();
+
+    await auctionDoc.set({
+      'createdBy': createdBy,
+      'productName': productName,
+      'brand': brand,
+      'model': model,
+      'description': description,
+      'startPrice': startPrice,
+      'minBid': minBid,
+      'category': category,
+      'deposit': deposit,
+      'imageUrls': imageUrls,
+      'createdAt': createdAt,
+    });
+  }
+
+  Future<List<Map<String, dynamic>>> getUserAuctions(String uid) async {
+    final querySnapshot = await _db.collection('auctions')
+        .where('createdBy', isEqualTo: uid)
+        .get();
+
+    return querySnapshot.docs.map((doc) => doc.data()).toList();
+  }
 }

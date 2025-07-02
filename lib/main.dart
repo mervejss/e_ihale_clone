@@ -2,6 +2,9 @@ import 'package:e_ihale_clone/screens/auth_wrapper.dart';
 import 'package:e_ihale_clone/screens/dasboard/dashboard_screen.dart';
 import 'package:e_ihale_clone/screens/dasboard/hamburger_menu/about_page.dart';
 import 'package:e_ihale_clone/screens/dasboard/hamburger_menu/faq_page.dart';
+import 'package:e_ihale_clone/screens/dasboard/hamburger_menu/finance_page.dart';
+import 'package:e_ihale_clone/screens/dasboard/hamburger_menu/my_auctions_pages/my_auctions_page.dart';
+import 'package:e_ihale_clone/screens/dasboard/hamburger_menu/returns_page.dart';
 import 'package:e_ihale_clone/screens/dasboard/hamburger_menu/terms_page.dart';
 import 'package:e_ihale_clone/screens/forgot_password_screen.dart';
 import 'package:e_ihale_clone/screens/home_screen.dart';
@@ -39,9 +42,9 @@ class MyApp extends StatelessWidget {
         '/terms': (context) => const TermsPage(),
         '/about': (context) => const AboutPage(),
 
-        '/finance': (context) => const AboutPage(),
-        '/my-auctions': (context) => const AboutPage(),
-        '/returns': (context) => const AboutPage(),
+        '/finance': (context) => const FinancePage(),
+        '/my-auctions': (context) => const MyAuctionsPage(),
+        '/returns': (context) => const ReturnsPage(),
 
 
       },
