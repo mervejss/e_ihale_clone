@@ -9,6 +9,7 @@ class AuthWrapper extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+
     return StreamBuilder<User?>(
       stream: FirebaseAuth.instance.authStateChanges(),
       builder: (context, snapshot) {
@@ -35,8 +36,8 @@ class AuthWrapper extends StatelessWidget {
             },
           );
         }
-
         return const HomeScreen();
+
       },
     );
   }
