@@ -67,6 +67,15 @@ class FirestoreService {
         .where('createdBy', isEqualTo: uid)
         .get();
 
-    return querySnapshot.docs.map((doc) => doc.data()).toList();
+    return querySnapshot.docs.map((doc) => {
+      ...doc.data(),
+      'id': doc.id, // ID'yi kesinlikle ekleyin
+    }).toList();
+  }
+
+  // Yeni eklenen ihale güncelleme fonksiyonu
+  Future<void> updateAuction(String auctionId, Map<String, dynamic> data) async {
+    final auctionDoc = _db.collection('auctions').doc(auctionId);
+    await auctionDoc.update(data);
   }
 }

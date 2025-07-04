@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "1034911035784",
-    "project_id": "e-ihale-clone",
-    "storage_bucket": "e-ihale-clone.firebasestorage.app"
+    "project_number": "544484460456",
+    "project_id": "e-ihale-clone-d2c98",
+    "storage_bucket": "e-ihale-clone-d2c98.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:1034911035784:android:66216452597eb791f34a3d",
+        "mobilesdk_app_id": "1:544484460456:android:fc5728ce38ea4904af3f9d",
         "android_client_info": {
           "package_name": "com.example.e_ihale_clone"
         }
@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyAvZ5oWCU_bAsXJ0GcvGVlRyi_MVZpt8BE"
+          "current_key": "AIzaSyDZow4iKzrNXdOxZEix7uneMdEwYrnVW8M"
         }
       ],
       "services": {

@@ -8,6 +8,9 @@ class CustomTextField extends StatelessWidget {
   final bool isRequired;
   final int maxLines;
   final IconData? icon;
+  final Widget? suffixIcon;
+  final bool obscureText;
+  final TextInputType keyboardType;
 
   const CustomTextField({
     Key? key,
@@ -17,6 +20,9 @@ class CustomTextField extends StatelessWidget {
     this.isRequired = false,
     this.maxLines = 1,
     this.icon,
+    this.suffixIcon,
+    this.obscureText = false,
+    this.keyboardType = TextInputType.text, // Ekleme
   }) : super(key: key);
 
   @override
@@ -42,6 +48,7 @@ class CustomTextField extends StatelessWidget {
             decoration: InputDecoration(
               prefixIcon: icon != null ? Icon(icon, color: AppColors.primaryColor) : null,
               hintText: hintText,
+              suffixIcon: suffixIcon,
               hintStyle: const TextStyle(
                 color: Colors.grey,
                 fontStyle: FontStyle.italic,
@@ -57,6 +64,8 @@ class CustomTextField extends StatelessWidget {
             ),
             style: const TextStyle(color: Colors.black),
             maxLines: maxLines,
+            obscureText: obscureText,
+            keyboardType: keyboardType, // Ekleme
             validator: isRequired ? (value) {
               if (value == null || value.isEmpty) {
                 return 'Zorunlu alan';
