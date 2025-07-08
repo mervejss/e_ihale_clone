@@ -78,4 +78,17 @@ class FirestoreService {
     final auctionDoc = _db.collection('auctions').doc(auctionId);
     await auctionDoc.update(data);
   }
+
+  // Assume this is in your FirestoreService class
+  Future<List<Map<String, dynamic>>> getAuctionsByCategory(String category) async {
+    try {
+      QuerySnapshot snapshot = await FirebaseFirestore.instance
+          .collection('auctions')
+          .where('category', isEqualTo: category)
+          .get();
+      return snapshot.docs.map((doc) => doc.data() as Map<String, dynamic>).toList();
+    } catch (e) {
+      throw Exception('Error fetching auctions by category: $e');
+    }
+  }
 }

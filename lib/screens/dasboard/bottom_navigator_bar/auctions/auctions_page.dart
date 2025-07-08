@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
-
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../../../utils/colors.dart';
+import '../../../../services/firestore_service.dart';
+import 'auctions_pages/widgets/simple_auction_card.dart'; // Import the SimpleAuctionCard widget
 
 class AuctionsPage extends StatefulWidget {
   const AuctionsPage({super.key});
@@ -12,14 +15,8 @@ class AuctionsPage extends StatefulWidget {
 class _AuctionsPageState extends State<AuctionsPage> with SingleTickerProviderStateMixin {
   late TabController _tabController;
   late ScrollController _scrollController;
-
-  final List<String> tabs = [
-    'Telefon',
-    'Bilgisayar',
-    'Aksesuar',
-    'Anakart',
-    'Teknik parça',
-  ];
+  final FirestoreService _firestoreService = FirestoreService();
+  final List<String> tabs = ['Telefon', 'Bilgisayar', 'Aksesuar', 'Anakart', 'Teknik parça'];
 
   @override
   void initState() {
@@ -133,18 +130,27 @@ class _AuctionsPageState extends State<AuctionsPage> with SingleTickerProviderSt
         ),
         body: TabBarView(
           controller: _tabController,
-          children: tabs.map((label) {
-            return AnimatedSwitcher(
-              duration: const Duration(milliseconds: 500),
-              switchInCurve: Curves.easeIn,
-              switchOutCurve: Curves.easeOut,
-              child: Center(
-                key: ValueKey(label),
-                child: Text(
-                  '$label İhaleleri',
-                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w500),
-                ),
-              ),
+          children: tabs.map((category) {
+            return FutureBuilder<List<Map<String, dynamic>>>(
+              future: _firestoreService.getAuctionsByCategory(category),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                } else if (snapshot.hasError) {
+                  return const Center(child: Text('Bir hata oluştu.'));
+                } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                  return const Center(child: Text('Bu kategoride henüz herhangi bir ihale bulunmuyor.'));
+                } else {
+                  return ListView.builder(
+                    padding: const EdgeInsets.all(16),
+                    itemCount: snapshot.data!.length,
+                    itemBuilder: (context, index) {
+                      final auction = snapshot.data![index];
+                      return SimpleAuctionCard(auction: auction);
+                    },
+                  );
+                }
+              },
             );
           }).toList(),
         ),

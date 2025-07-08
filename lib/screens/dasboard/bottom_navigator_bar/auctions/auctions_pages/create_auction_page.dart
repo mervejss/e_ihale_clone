@@ -35,6 +35,8 @@ class _CreateAuctionPageState extends State<CreateAuctionPage> {
 
   String? _selectedCategory;
   List<XFile>? _selectedImages = [];
+  bool _photoError = false;
+  bool isExpanded = false;
 
   final List<String> _categories = [
     'Telefon',
@@ -51,8 +53,6 @@ class _CreateAuctionPageState extends State<CreateAuctionPage> {
     'Anakart': Icons.memory,
     'Teknik parça': Icons.build,
   };
-
-  bool _photoError = false;
 
   void _updateDeposit() {
     String whole = _startPriceWholeController.text.replaceAll('.', '');
@@ -109,7 +109,6 @@ class _CreateAuctionPageState extends State<CreateAuctionPage> {
     if (isValid && !_photoError) {
       final now = DateTime.now().toLocal();
 
-      // Giriş yapmış kullanıcının uid'sini al
       User? user = FirebaseAuth.instance.currentUser;
       String createdBy = user?.uid ?? '';
 
@@ -120,7 +119,6 @@ class _CreateAuctionPageState extends State<CreateAuctionPage> {
         return;
       }
 
-      // İhaleyi Firestore'a kaydet
       FirestoreService firestoreService = FirestoreService();
       await firestoreService.createAuction(
         createdBy: createdBy,
@@ -132,21 +130,12 @@ class _CreateAuctionPageState extends State<CreateAuctionPage> {
         minBid: '${_minBidWholeController.text},${_minBidFractionalController.text}',
         category: _selectedCategory!,
         deposit: _depositController.text,
-        imageUrls: [], // Bu kısmı boş liste olarak bırakıyoruz
+        imageUrls: [],
         createdAt: now,
       );
 
-      print("Ürün Adı: ${_productNameController.text}");
-      print("Marka: ${_brandController.text}");
-      print("Model: ${_modelController.text}");
-      print("Açıklama: ${_descriptionController.text}");
-      print("Başlangıç Fiyatı: ${_startPriceWholeController.text},${_startPriceFractionalController.text}");
-      print("Minimum Artış Tutarı: ${_minBidWholeController.text},${_minBidFractionalController.text}");
-      print("Kategori: $_selectedCategory");
-      print("Kapora Bedeli: ${_depositController.text}");
-      print("İhale Oluşturma Zamanı: ${DateFormat('dd.MM.yyyy HH:mm:ss', 'tr_TR').format(now)}");
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('İhale başarıyla oluşturuldu!')),
+        const SnackBar(content: Text('İhale başarıyla oluşturuldu!')),
       );
     }
   }
@@ -208,13 +197,67 @@ class _CreateAuctionPageState extends State<CreateAuctionPage> {
                 icon: Icons.device_hub,
                 isRequired: true,
               ),
-              CustomTextField(
-                controller: _descriptionController,
-                label: 'Açıklama',
-                hintText: 'Ürün açıklamasını buraya giriniz',
-                icon: Icons.description,
-                maxLines: 2,
-                isRequired: true,
+              SectionHeader(title: 'Açıklama'),
+              Stack(
+                children: [
+                  TextFormField(
+                    controller: _descriptionController,
+                    maxLines: isExpanded ? null : 1,
+                    decoration: InputDecoration(
+                      hintText: 'Ürün açıklamasını buraya giriniz',
+                      hintStyle: const TextStyle(
+                        color: Colors.grey,
+                        fontStyle: FontStyle.italic,
+                        fontSize: 14,
+                      ),
+                      prefixIcon: const Icon(Icons.description, color: AppColors.primaryColor),
+                      border: OutlineInputBorder(
+                        borderSide: BorderSide(color: AppColors.primaryColor),
+                        borderRadius: BorderRadius.circular(8.0),
+                      ),
+                      labelStyle: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.primaryColor,
+                      ),
+                      filled: true,
+                      fillColor: Colors.white,
+                    ),
+                    style: const TextStyle(color: Colors.black),
+                  ),
+                  Positioned(
+                    top: 0,
+                    right: 0,
+                    child: IconButton(
+                      icon: Icon(isExpanded ? Icons.arrow_drop_up : Icons.arrow_drop_down),
+                      color: AppColors.primaryColor,
+                      onPressed: () {
+                        setState(() {
+                          isExpanded = !isExpanded;
+                        });
+                      },
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton.icon(
+                    onPressed: () {
+                      _descriptionController.text += '\n';
+                      setState(() {});
+                    },
+                    icon: const Icon(Icons.add, color: AppColors.primaryColor),
+                    label: const Text(
+                      'Yeni Satır Ekle',
+                      style: TextStyle(
+                        fontStyle: FontStyle.italic,
+                        color: AppColors.primaryColor,
+                      ),
+                    ),
+                  ),
+                ],
               ),
               SectionHeader(title: 'Kategori Seçimi'),
               DropdownCategory(

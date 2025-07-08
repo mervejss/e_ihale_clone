@@ -1,8 +1,10 @@
-// my_auctions_page.dart
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:intl/intl.dart';
 import '../../../../services/firestore_service.dart';
 import '../../../../utils/colors.dart';
+import 'widgets/auction_card.dart';
 import 'my_auctions_page_detail.dart';
 
 class MyAuctionsPage extends StatefulWidget {
@@ -51,61 +53,7 @@ class _MyAuctionsPageState extends State<MyAuctionsPage> {
               itemCount: snapshot.data!.length,
               itemBuilder: (context, index) {
                 final auction = snapshot.data![index];
-                return GestureDetector(
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => AuctionDetailPage(auction: auction),
-                      ),
-                    );
-                  },
-                  child: Card(
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                    elevation: 6,
-                    margin: const EdgeInsets.only(bottom: 16),
-                    color: Colors.white,
-                    child: Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            auction['productName'] ?? '',
-                            style: const TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Row(
-                            children: [
-                              const Icon(Icons.category, size: 16),
-                              const SizedBox(width: 4),
-                              Text(auction['category'] ?? ''),
-                            ],
-                          ),
-                          const SizedBox(height: 4),
-                          Row(
-                            children: [
-                              const Icon(Icons.description, size: 16),
-                              const SizedBox(width: 4),
-                              Expanded(child: Text(auction['description'] ?? '')),
-                            ],
-                          ),
-                          const SizedBox(height: 4),
-                          Row(
-                            children: [
-                              const Icon(Icons.monetization_on, size: 16),
-                              const SizedBox(width: 4),
-                              Text('₺${auction['startPrice'].toString()}'),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                );
+                return AuctionCard(auction: auction);
               },
             );
           }

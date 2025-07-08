@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../../../utils/colors.dart';
 import '../../../../../screens/dasboard/bottom_navigator_bar/auctions/auctions_pages/widgets/section_header_widget.dart';
 import '../../../../../screens/dasboard/bottom_navigator_bar/auctions/auctions_pages/widgets/text_field_widget.dart';
@@ -8,7 +7,7 @@ import '../../../../../screens/dasboard/bottom_navigator_bar/auctions/auctions_p
 import '../../../../../screens/dasboard/bottom_navigator_bar/auctions/auctions_pages/widgets/dropdown_category_widget.dart';
 import '../../../../services/firestore_service.dart';
 import '../../../../widgets/save_confirmation_dialog.dart';
-import '../../../../widgets/save_result_dialog.dart'; // Eklendi
+import '../../../../widgets/save_result_dialog.dart';
 
 class AuctionDetailPage extends StatefulWidget {
   final Map<String, dynamic> auction;
@@ -25,6 +24,7 @@ class _AuctionDetailPageState extends State<AuctionDetailPage> {
   late TextEditingController modelController;
   late TextEditingController descriptionController;
   late String selectedCategory;
+  bool isExpanded = false;
 
   @override
   void initState() {
@@ -36,12 +36,10 @@ class _AuctionDetailPageState extends State<AuctionDetailPage> {
     selectedCategory = widget.auction['category'];
   }
 
-  Future<void> _showSaveConfirmationDialog() async {
+  void _showSaveConfirmationDialog() {
     showDialog(
       context: context,
-      builder: (context) => SaveConfirmationDialog(
-        onSave: _saveChanges,
-      ),
+      builder: (context) => SaveConfirmationDialog(onSave: _saveChanges),
     );
   }
 
@@ -69,13 +67,10 @@ class _AuctionDetailPageState extends State<AuctionDetailPage> {
     }
   }
 
-  Future<void> _showSaveResultDialog(bool isSuccess, String message) async {
+  void _showSaveResultDialog(bool isSuccess, String message) {
     showDialog(
       context: context,
-      builder: (context) => SaveResultDialog(
-        isSuccess: isSuccess,
-        message: message,
-      ),
+      builder: (context) => SaveResultDialog(isSuccess: isSuccess, message: message),
     );
   }
 
@@ -121,12 +116,62 @@ class _AuctionDetailPageState extends State<AuctionDetailPage> {
               icon: Icons.device_hub,
               isRequired: true,
             ),
-            CustomTextField(
-              controller: descriptionController,
-              label: 'Açıklama',
-              icon: Icons.description,
-              maxLines: 2,
-              isRequired: true,
+            SectionHeader(title: 'Açıklama'),
+            Stack(
+              children: [
+                TextFormField(
+                  controller: descriptionController,
+                  maxLines: isExpanded ? null : 1,
+                  decoration: InputDecoration(
+                    labelText: 'Açıklama',
+                    prefixIcon: const Icon(Icons.description, color: AppColors.primaryColor),
+                    border: OutlineInputBorder(
+                      borderSide: BorderSide(color: AppColors.primaryColor),
+                      borderRadius: BorderRadius.circular(8.0),
+                    ),
+                    labelStyle: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.primaryColor,
+                    ),
+                    filled: true,
+                    fillColor: AppColors.secondaryColor,
+                  ),
+                  style: const TextStyle(color: Colors.black),
+                ),
+                Positioned(
+                  top: 0,
+                  right: 0,
+                  child: IconButton(
+                    icon: Icon(isExpanded ? Icons.arrow_drop_up : Icons.arrow_drop_down),
+                    color: AppColors.primaryColor,
+                    onPressed: () {
+                      setState(() {
+                        isExpanded = !isExpanded;
+                      });
+                    },
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                TextButton.icon(
+                  onPressed: () {
+                    descriptionController.text += '\n';
+                    setState(() {});
+                  },
+                  icon: const Icon(Icons.add, color: AppColors.primaryColor),
+                  label: const Text(
+                    'Yeni Satır Ekle',
+                    style: TextStyle(
+                      fontStyle: FontStyle.italic,
+                      color: AppColors.primaryColor,
+                    ),
+                  ),
+                ),
+              ],
             ),
             SectionHeader(title: 'Kategori Seçimi'),
             DropdownCategory(
