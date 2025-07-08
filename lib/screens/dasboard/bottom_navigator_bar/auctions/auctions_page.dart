@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import '../../../../utils/colors.dart';
 import '../../../../services/firestore_service.dart';
-import 'auctions_pages/widgets/simple_auction_card.dart'; // Import the SimpleAuctionCard widget
+import 'auctions_pages/auctions_page_details.dart';
+import 'auctions_pages/widgets/simple_auction_card.dart';
 
 class AuctionsPage extends StatefulWidget {
   const AuctionsPage({super.key});
@@ -146,7 +146,20 @@ class _AuctionsPageState extends State<AuctionsPage> with SingleTickerProviderSt
                     itemCount: snapshot.data!.length,
                     itemBuilder: (context, index) {
                       final auction = snapshot.data![index];
-                      return SimpleAuctionCard(auction: auction);
+                      // Ensure that each auction has an 'id'
+                      final auctionWithId = {
+                        'id': auction['id'] ?? '<provide_default_id_if_needed>',
+                        ...auction,
+                      };
+                      return GestureDetector(
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => AuctionsPageDetails(auction: auctionWithId),
+                          ),
+                        ),
+                        child: SimpleAuctionCard(auction: auctionWithId),
+                      );
                     },
                   );
                 }

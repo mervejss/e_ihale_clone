@@ -1,7 +1,11 @@
+import 'dart:async';
+
+import 'package:e_ihale_clone/screens/dasboard/bottom_navigator_bar/auctions/auctions_pages/widgets/flip_card_timer.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../../../../../utils/colors.dart';
 import '../../../../../screens/dasboard/bottom_navigator_bar/auctions/auctions_pages/widgets/section_header_widget.dart';
+import 'bid_page.dart';
 
 class DisabledTextField extends StatelessWidget {
   final TextEditingController controller;
@@ -56,7 +60,34 @@ class AuctionsPageDetails extends StatefulWidget {
 
 class _AuctionsPageDetailsState extends State<AuctionsPageDetails> {
   bool isExpanded = false;
+  late DateTime createdAt;
+  late DateTime endAt;
+  late Timer _timer;
+  Duration _remainingTime = Duration.zero;
 
+  @override
+  void initState() {
+    super.initState();
+
+    createdAt = widget.auction['createdAt']?.toDate()?.toLocal() ?? DateTime.now();
+    endAt = createdAt.add(const Duration(hours: 24));
+
+    _updateRemainingTime();
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) => _updateRemainingTime());
+  }
+
+  void _updateRemainingTime() {
+    final now = DateTime.now();
+    setState(() {
+      _remainingTime = endAt.difference(now).isNegative ? Duration.zero : endAt.difference(now);
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer.cancel();
+    super.dispose();
+  }
   @override
   Widget build(BuildContext context) {
     DateTime createdAt = widget.auction['createdAt']?.toDate()?.toLocal() ?? DateTime.now();
@@ -133,6 +164,8 @@ class _AuctionsPageDetailsState extends State<AuctionsPageDetails> {
               label: 'Bitiş Tarihi',
               icon: Icons.timer_off,
             ),
+            const SizedBox(height: 16),
+            Center(child: _buildCountdownTimer()), // Sayaç burada çağrılıyor
             SectionHeader(title: 'Açıklama'),
             Stack(
               children: [
@@ -160,6 +193,39 @@ class _AuctionsPageDetailsState extends State<AuctionsPageDetails> {
           ],
         ),
       ),
+      bottomNavigationBar: BottomAppBar(
+        color: AppColors.primaryColor,
+        child: Padding(
+          padding: const EdgeInsets.all(5.0),
+          child: ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.secondaryColor,
+              foregroundColor: AppColors.primaryColor,
+              minimumSize: const Size(double.infinity, 50),
+            ),
+            onPressed: () {
+
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => BidPage(auction: widget.auction),
+                ),
+              );
+            },
+            child: const Text('TEKLİF VER'),
+          ),
+        ),
+      ),
     );
+  }
+  Widget _buildCountdownTimer() {
+    if (_remainingTime == Duration.zero) {
+      return const Text(
+        'Süre doldu',
+        style: TextStyle(fontSize: 18, color: Colors.red, fontWeight: FontWeight.bold),
+      );
+    }
+
+    return FlipCardTimer(remainingTime: _remainingTime);
   }
 }

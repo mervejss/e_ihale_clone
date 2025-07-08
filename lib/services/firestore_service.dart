@@ -86,9 +86,29 @@ class FirestoreService {
           .collection('auctions')
           .where('category', isEqualTo: category)
           .get();
-      return snapshot.docs.map((doc) => doc.data() as Map<String, dynamic>).toList();
+
+      return snapshot.docs.map((doc) => {
+        ...doc.data() as Map<String, dynamic>,
+        'id': doc.id, // Ensure the ID is included
+      }).toList();
     } catch (e) {
       throw Exception('Error fetching auctions by category: $e');
     }
+  }
+
+  // Method to save a bid
+  Future<void> saveBid({
+    required String auctionId,
+    required String createdBy,
+    required double bidAmount,
+    required DateTime createdAt,
+  }) async {
+    final bidsCollection = _db.collection('bids').doc();
+    await bidsCollection.set({
+      'auctionId': auctionId,
+      'createdBy': createdBy,
+      'bidAmount': bidAmount,
+      'createdAt': createdAt,
+    });
   }
 }
