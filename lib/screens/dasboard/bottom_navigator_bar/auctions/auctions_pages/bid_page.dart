@@ -1,17 +1,16 @@
 import 'dart:async';
-
-import 'package:e_ihale_clone/screens/dasboard/bottom_navigator_bar/auctions/auctions_pages/widgets/flip_card_timer.dart';
+import 'package:e_ihale_clone/screens/dasboard/bottom_navigator_bar/auctions/auctions_pages/widgets/section_header_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:e_ihale_clone/widgets/save_confirmation_dialog.dart';
-import 'package:e_ihale_clone/widgets/save_result_dialog.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../../../../../utils/colors.dart';
-import '../../../../../screens/dasboard/bottom_navigator_bar/auctions/auctions_pages/widgets/price_field_widget.dart';
-import '../../../../../screens/dasboard/bottom_navigator_bar/auctions/auctions_pages/widgets/section_header_widget.dart';
+import 'package:e_ihale_clone/widgets/save_confirmation_dialog.dart';
+import 'package:e_ihale_clone/widgets/save_result_dialog.dart';
 import '../../../../../services/firestore_service.dart';
 import 'auctions_page_details.dart';
+import 'package:e_ihale_clone/screens/dasboard/bottom_navigator_bar/auctions/auctions_pages/widgets/flip_card_timer.dart';
+import '../../../../../screens/dasboard/bottom_navigator_bar/auctions/auctions_pages/widgets/price_field_widget.dart';
 
 class BidPage extends StatefulWidget {
   final Map<String, dynamic> auction;
@@ -24,49 +23,84 @@ class BidPage extends StatefulWidget {
 
 class _BidPageState extends State<BidPage> {
   final TextEditingController _bidWholeController = TextEditingController();
-  final TextEditingController _bidFractionalController = TextEditingController(text: '00');
+  final TextEditingController _bidFractionalController = TextEditingController(
+    text: '00',
+  );
   final TextEditingController _depositController = TextEditingController();
-
   final _formKey = GlobalKey<FormState>();
   final FirestoreService _firestoreService = FirestoreService();
 
   late double minBidPrice;
-
   late DateTime createdAt;
   late DateTime endAt;
   late Timer _timer;
   Duration _remainingTime = Duration.zero;
 
+  List<Map<String, dynamic>> bids = [];
+
   @override
   void initState() {
     super.initState();
 
-    String startPrice = (widget.auction['startPrice'] ?? '0')
-        .replaceAll('.', '')
-        .replaceAll(',', '.');
+    createdAt =
+        (widget.auction['createdAt'] as Timestamp?)?.toDate().toLocal() ??
+        DateTime.now();
+    endAt = createdAt.add(const Duration(hours: 24));
 
+    _updateRemainingTime();
+    _timer = Timer.periodic(
+      const Duration(seconds: 1),
+      (_) => _updateRemainingTime(),
+    );
+
+    _fetchBids();
+  }
+
+  Future<void> _fetchBids() async {
+    final auctionId = widget.auction['id'];
+
+    final QuerySnapshot bidSnapshot = await FirebaseFirestore.instance
+        .collection('bids')
+        .where('auctionId', isEqualTo: auctionId)
+        .orderBy('createdAt', descending: false)
+        .get();
+
+    setState(() {
+      bids = bidSnapshot.docs
+          .map((doc) => doc.data() as Map<String, dynamic>)
+          .toList();
+      _updateMinBidPrice();
+    });
+  }
+
+  void _updateMinBidPrice() {
     String minIncrement = (widget.auction['minBid'] ?? '0')
         .replaceAll('.', '')
         .replaceAll(',', '.');
 
-    double startPriceValue = double.tryParse(startPrice) ?? 0.0;
     double minIncrementValue = double.tryParse(minIncrement) ?? 0.0;
-    minBidPrice = startPriceValue + minIncrementValue;
+
+    if (bids.isEmpty) {
+      String startPrice = (widget.auction['startPrice'] ?? '0')
+          .replaceAll('.', '')
+          .replaceAll(',', '.');
+
+      double startPriceValue = double.tryParse(startPrice) ?? 0.0;
+      minBidPrice = startPriceValue + minIncrementValue;
+    } else {
+      double lastBid = bids.last['bidAmount'];
+      minBidPrice = lastBid + minIncrementValue;
+    }
 
     setDefaultBidPrice();
-
-    createdAt =
-        (widget.auction['createdAt'] as Timestamp?)?.toDate().toLocal() ?? DateTime.now();
-    endAt = createdAt.add(const Duration(hours: 24));
-
-    _updateRemainingTime();
-    _timer = Timer.periodic(const Duration(seconds: 1), (_) => _updateRemainingTime());
   }
 
   void _updateRemainingTime() {
     final now = DateTime.now();
     setState(() {
-      _remainingTime = endAt.difference(now).isNegative ? Duration.zero : endAt.difference(now);
+      _remainingTime = endAt.difference(now).isNegative
+          ? Duration.zero
+          : endAt.difference(now);
     });
   }
 
@@ -88,6 +122,8 @@ class _BidPageState extends State<BidPage> {
 
   @override
   Widget build(BuildContext context) {
+    bool isAuctionActive = _remainingTime > Duration.zero;
+
     return Scaffold(
       backgroundColor: AppColors.secondaryColor,
       appBar: AppBar(
@@ -97,7 +133,7 @@ class _BidPageState extends State<BidPage> {
         actions: [
           IconButton(
             icon: const Icon(Icons.check),
-            onPressed: _showSaveConfirmationDialog,
+            onPressed: isAuctionActive ? _showSaveConfirmationDialog : null,
           ),
         ],
       ),
@@ -107,40 +143,46 @@ class _BidPageState extends State<BidPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             SectionHeader(title: 'Fiyat Bilgileri'),
-            DisabledTextField(
-              controller: TextEditingController(text: '₺${widget.auction['startPrice'] ?? '0'}'),
-              label: 'Başlangıç Fiyatı',
-              icon: Icons.monetization_on,
+            _buildDisabledTextField(
+              '₺${widget.auction['startPrice'] ?? '0'}',
+              'Başlangıç Fiyatı',
+              Icons.monetization_on,
             ),
-            DisabledTextField(
-              controller: TextEditingController(text: '₺${widget.auction['minBid'] ?? '0'}'),
-              label: 'Min. Artış',
-              icon: Icons.add,
+            _buildDisabledTextField(
+              '₺${widget.auction['minBid'] ?? '0'}',
+              'Min. Artış',
+              Icons.add,
             ),
-            DisabledTextField(
-              controller: TextEditingController(text: '${widget.auction['deposit'] ?? '0'}'),
-              label: 'Kapora Bedeli',
-              icon: Icons.lock,
+            _buildDisabledTextField(
+              '${widget.auction['deposit'] ?? '0'}',
+              'Kapora Bedeli',
+              Icons.lock,
             ),
             SectionHeader(title: 'Tarih Bilgileri'),
-            DisabledTextField(
-              controller: TextEditingController(
-                text: DateFormat('dd.MM.yyyy HH:mm:ss', 'tr_TR').format(createdAt),
-              ),
-              label: 'Oluşturulma Tarihi',
-              icon: Icons.access_time,
+            _buildDisabledTextField(
+              DateFormat('dd.MM.yyyy HH:mm:ss', 'tr_TR').format(createdAt),
+              'Oluşturulma Tarihi',
+              Icons.access_time,
             ),
-            DisabledTextField(
-              controller: TextEditingController(
-                text: DateFormat('dd.MM.yyyy HH:mm:ss', 'tr_TR').format(endAt),
-              ),
-              label: 'Bitiş Tarihi',
-              icon: Icons.timer_off,
+            _buildDisabledTextField(
+              DateFormat('dd.MM.yyyy HH:mm:ss', 'tr_TR').format(endAt),
+              'Bitiş Tarihi',
+              Icons.timer_off,
             ),
 
-            // GERİ SAYIM SAYAÇ
             const SizedBox(height: 16),
             Center(child: _buildCountdownTimer()),
+
+            const SizedBox(height: 16),
+            SectionHeader(title: 'Bu İhaleye Verilen Teklifler'),
+            bids.isEmpty
+                ? const Center(
+                    child: Text(
+                      'Bu ihale için henüz bir teklif yok.',
+                      style: TextStyle(color: Colors.grey),
+                    ),
+                  )
+                : Column(children: _buildBidList(),),
 
             SectionHeader(title: 'Yeni Teklif Ver'),
             Form(
@@ -153,11 +195,12 @@ class _BidPageState extends State<BidPage> {
                     fractionalController: _bidFractionalController,
                     icon: Icons.monetization_on,
                     onUpdate: () {},
+                    isEnabled: isAuctionActive,
                   ),
-                  DisabledTextField(
-                    controller: _depositController,
-                    label: 'Kapora Bedeli (₺)',
-                    icon: Icons.lock,
+                  _buildDisabledTextField(
+                    _depositController.text,
+                    'Kapora Bedeli (₺)',
+                    Icons.lock,
                   ),
                 ],
               ),
@@ -168,17 +211,88 @@ class _BidPageState extends State<BidPage> {
     );
   }
 
+  List<Widget> _buildBidList() {
+    return List<Widget>.generate(bids.length, (index) {
+      final bid = bids[index];
+      final formattedDate = DateFormat('dd.MM.yyyy HH:mm:ss', 'tr_TR')
+          .format((bid['createdAt'] as Timestamp).toDate().toLocal());
+
+      return Column(
+        children: [
+          Card(
+            color: Colors.white70,
+            elevation: 1.5,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+              side: BorderSide(color: Colors.grey.shade300, width: 0.6),
+            ),
+            child: ListTile(
+              leading: CircleAvatar(
+                backgroundColor: AppColors.primaryColor,
+                child: Text(
+                  '${index + 1}',
+                  style: const TextStyle(color: Colors.white),
+                ),
+              ),
+              title: RichText(
+                text: TextSpan(
+                  style: Theme.of(context).textTheme.bodyMedium,
+                  children: [
+                    const TextSpan(
+                      text: 'Teklif: ',
+                      style: TextStyle(fontWeight: FontWeight.bold,color: AppColors.primaryColor),
+                    ),
+                    TextSpan(
+                      text: '${bid['bidAmount']} ₺',
+                      style: const TextStyle(fontStyle: FontStyle.italic,fontSize: 18),
+                    ),
+                  ],
+                ),
+              ),
+              subtitle: RichText(
+                text: TextSpan(
+                  style: Theme.of(context).textTheme.bodySmall,
+                  children: [
+                    const TextSpan(
+                      text: 'Tarih: ',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    TextSpan(
+                      text: formattedDate,
+                      style: const TextStyle(fontStyle: FontStyle.italic,color: Colors.red),
+                    ),
+                  ],
+                ),
+              ),
+              trailing: Icon(Icons.timeline, color: AppColors.primaryColor),
+            ),
+          ),
+
+        ],
+      );
+    });
+  }
+
+
+  Widget _buildDisabledTextField(String text, String label, IconData icon) {
+    return DisabledTextField(
+      controller: TextEditingController(text: text),
+      label: label,
+      icon: icon,
+    );
+  }
+
   Widget _buildCountdownTimer() {
     if (_remainingTime == Duration.zero) {
       return const Text(
         'Süre doldu',
-        style: TextStyle(fontSize: 18, color: Colors.red, fontWeight: FontWeight.bold),
+        style: TextStyle(
+          fontSize: 18,
+          color: Colors.red,
+          fontWeight: FontWeight.bold,
+        ),
       );
     }
-
-    final hours = _remainingTime.inHours.remainder(24).toString().padLeft(2, '0');
-    final minutes = _remainingTime.inMinutes.remainder(60).toString().padLeft(2, '0');
-    final seconds = _remainingTime.inSeconds.remainder(60).toString().padLeft(2, '0');
 
     return FlipCardTimer(remainingTime: _remainingTime);
   }
@@ -186,9 +300,7 @@ class _BidPageState extends State<BidPage> {
   void _showSaveConfirmationDialog() {
     showDialog(
       context: context,
-      builder: (context) => SaveConfirmationDialog(
-        onSave: _checkBid,
-      ),
+      builder: (context) => SaveConfirmationDialog(onSave: _checkBid),
     );
   }
 
@@ -236,6 +348,7 @@ class _BidPageState extends State<BidPage> {
               message: 'Teklif başarıyla kaydedildi!',
             ),
           );
+          _fetchBids(); // Refresh the bid list after saving a new bid
         }
       }
     } catch (e) {
@@ -256,6 +369,9 @@ class _BidPageState extends State<BidPage> {
     String fractional = _bidFractionalController.text.padLeft(2, '0');
     double price = double.tryParse('$whole.$fractional') ?? 0.0;
     double deposit = price * 0.05;
-    _depositController.text = NumberFormat.currency(locale: 'tr_TR', symbol: '₺').format(deposit);
+    _depositController.text = NumberFormat.currency(
+      locale: 'tr_TR',
+      symbol: '₺',
+    ).format(deposit);
   }
 }

@@ -10,6 +10,7 @@ class PriceField extends StatelessWidget {
   final TextEditingController fractionalController;
   final IconData icon;
   final Function onUpdate;
+  final bool isEnabled;
 
   const PriceField({
     Key? key,
@@ -18,6 +19,7 @@ class PriceField extends StatelessWidget {
     required this.fractionalController,
     required this.icon,
     required this.onUpdate,
+    this.isEnabled = true,
   }) : super(key: key);
 
   @override
@@ -45,11 +47,14 @@ class PriceField extends StatelessWidget {
                 child: TextFormField(
                   controller: wholeController,
                   validator: (value) => value == null || value.isEmpty ? 'Zorunlu alan' : null,
-                  keyboardType: TextInputType.number,
-                  inputFormatters: [
+                  keyboardType: isEnabled ? TextInputType.number : TextInputType.none,
+                  inputFormatters: isEnabled
+                      ? [
                     FilteringTextInputFormatter.digitsOnly,
                     ThousandsFormatter(),
-                  ],
+                  ]
+                      : null,
+                  readOnly: !isEnabled,
                   decoration: InputDecoration(
                     prefixIcon: Icon(icon, color: AppColors.primaryColor),
                     border: OutlineInputBorder(
@@ -57,10 +62,10 @@ class PriceField extends StatelessWidget {
                       borderRadius: BorderRadius.circular(8.0),
                     ),
                     filled: true,
-                    fillColor: AppColors.secondaryColor,
+                    fillColor: isEnabled ? AppColors.secondaryColor : Colors.grey.shade300,
                   ),
                   style: const TextStyle(color: AppColors.primaryColor),
-                  onChanged: (_) => onUpdate(),
+                  onChanged: isEnabled ? (_) => onUpdate() : null,
                 ),
               ),
               const SizedBox(width: 7),
@@ -77,9 +82,10 @@ class PriceField extends StatelessWidget {
                 child: TextFormField(
                   validator: (value) => value == null || value.isEmpty ? 'Zorunlu alan' : null,
                   controller: fractionalController,
-                  keyboardType: TextInputType.number,
+                  keyboardType: isEnabled ? TextInputType.number : TextInputType.none,
                   maxLength: 2,
-                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                  inputFormatters: isEnabled ? [FilteringTextInputFormatter.digitsOnly] : null,
+                  readOnly: !isEnabled,
                   decoration: InputDecoration(
                     counterText: '',
                     suffixText: '₺',
@@ -88,10 +94,10 @@ class PriceField extends StatelessWidget {
                       borderRadius: BorderRadius.circular(8.0),
                     ),
                     filled: true,
-                    fillColor: AppColors.secondaryColor,
+                    fillColor: isEnabled ? AppColors.secondaryColor : Colors.grey.shade300,
                   ),
                   style: const TextStyle(color: AppColors.primaryColor),
-                  onChanged: (_) => onUpdate(),
+                  onChanged: isEnabled ? (_) => onUpdate() : null,
                 ),
               ),
             ],
@@ -100,8 +106,8 @@ class PriceField extends StatelessWidget {
       ),
     );
   }
-
 }
+
 class ThousandsFormatter extends TextInputFormatter {
   @override
   TextEditingValue formatEditUpdate(
