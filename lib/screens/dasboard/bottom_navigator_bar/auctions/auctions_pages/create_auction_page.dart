@@ -12,6 +12,10 @@ import 'package:e_ihale_clone/screens/dasboard/bottom_navigator_bar/auctions/auc
 import 'package:e_ihale_clone/screens/dasboard/bottom_navigator_bar/auctions/auctions_pages/widgets/dropdown_category_widget.dart';
 import 'package:e_ihale_clone/screens/dasboard/bottom_navigator_bar/auctions/auctions_pages/widgets/price_field_widget.dart';
 
+import '../../../../../widgets/loading_screen.dart';
+import '../../../../../widgets/save_result_dialog.dart';
+import '../../../dashboard_screen.dart';
+
 class CreateAuctionPage extends StatefulWidget {
   const CreateAuctionPage({super.key});
 
@@ -118,6 +122,13 @@ class _CreateAuctionPageState extends State<CreateAuctionPage> {
         return;
       }
 
+      // Show loading dialog
+      showDialog(
+        barrierDismissible: false,
+        context: context,
+        builder: (_) => const LoadingScreen(message: 'İhale oluşturuluyor...'),
+      );
+
       FirestoreService firestoreService = FirestoreService();
       await firestoreService.createAuction(
         createdBy: createdBy,
@@ -133,8 +144,20 @@ class _CreateAuctionPageState extends State<CreateAuctionPage> {
         createdAt: now,
       );
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('İhale başarıyla oluşturuldu!')),
+      // Close loading dialog
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const DashboardScreen()),
+      );
+
+      // Show success dialog
+      showDialog(
+        context: context,
+        builder: (_) => const SaveResultDialog(
+          isSuccess: true,
+          message: 'İhale başarıyla oluşturuldu!',
+        ),
+
       );
     }
   }

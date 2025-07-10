@@ -104,8 +104,19 @@ class _BidPageState extends State<BidPage> {
     });
   }
 
+  void _updateWinner() async {
+    if (_remainingTime == Duration.zero && bids.isNotEmpty) {
+      final auctionId = widget.auction['id'];
+      final winnerUserId = bids.last['createdBy']; // Son teklif verenin ID'si
+
+      await _firestoreService.updateAuction(auctionId, {'winnerUserId': winnerUserId});
+    }
+  }
+
   @override
   void dispose() {
+    _updateWinner(); // Süre bitiminde kazananı günceller
+
     _timer.cancel();
     super.dispose();
   }
@@ -217,14 +228,20 @@ class _BidPageState extends State<BidPage> {
       final formattedDate = DateFormat('dd.MM.yyyy HH:mm:ss', 'tr_TR')
           .format((bid['createdAt'] as Timestamp).toDate().toLocal());
 
+      bool isWinningBid = _remainingTime == Duration.zero && index == bids.length - 1;
+
       return Column(
         children: [
           Card(
             color: Colors.white70,
             elevation: 1.5,
+
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
-              side: BorderSide(color: Colors.grey.shade300, width: 0.6),
+              side: BorderSide(
+                color: isWinningBid ? Colors.red : Colors.grey.shade300,
+                width: isWinningBid ? 2.0 : 0.6,
+              ),
             ),
             child: ListTile(
               leading: CircleAvatar(
@@ -246,6 +263,12 @@ class _BidPageState extends State<BidPage> {
                       text: '${bid['bidAmount']} ₺',
                       style: const TextStyle(fontStyle: FontStyle.italic,fontSize: 18),
                     ),
+                    if (isWinningBid)
+                      const TextSpan(
+                        text: '\n(İhaleyi Kazanan Teklif)',
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold, color: Colors.red,fontSize: 20),
+                      ),
                   ],
                 ),
               ),
@@ -259,7 +282,7 @@ class _BidPageState extends State<BidPage> {
                     ),
                     TextSpan(
                       text: formattedDate,
-                      style: const TextStyle(fontStyle: FontStyle.italic,color: Colors.red),
+                      style: const TextStyle(fontStyle: FontStyle.italic,color: Colors.blueAccent),
                     ),
                   ],
                 ),
@@ -283,18 +306,22 @@ class _BidPageState extends State<BidPage> {
   }
 
   Widget _buildCountdownTimer() {
-    if (_remainingTime == Duration.zero) {
-      return const Text(
-        'Süre doldu',
-        style: TextStyle(
-          fontSize: 18,
-          color: Colors.red,
-          fontWeight: FontWeight.bold,
-        ),
-      );
-    }
 
-    return FlipCardTimer(remainingTime: _remainingTime);
+
+    return Column(
+      children: [
+        FlipCardTimer(remainingTime: _remainingTime),
+        if (_remainingTime == Duration.zero)
+          const Text(
+            'Süre doldu',
+            style: TextStyle(
+              fontSize: 18,
+              color: Colors.red,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+      ],
+    );
   }
 
   void _showSaveConfirmationDialog() {

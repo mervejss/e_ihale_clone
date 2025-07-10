@@ -64,6 +64,8 @@ class FirestoreService {
       'deposit': deposit,
       'imageUrls': imageUrls,
       'createdAt': createdAt,
+      'winnerUserId': '', // initial value is empty
+
     });
   }
 
@@ -161,5 +163,6 @@ class FirestoreService {
       'imageUrls': newImageUrls,
     });
   }
+
 
 }

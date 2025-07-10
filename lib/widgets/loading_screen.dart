@@ -5,7 +5,7 @@ import '../utils/colors.dart';
 class LoadingScreen extends StatelessWidget {
   final String message;
 
-  const LoadingScreen({super.key, this.message = 'İşlem şuanda devam ediyor...'});
+  const LoadingScreen({super.key, this.message = 'İşlem devam ediyor...'});
 
   @override
   Widget build(BuildContext context) {
