@@ -1,9 +1,14 @@
 import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import '../../../../../../services/firestore_service.dart';
 import '../../../../../../utils/colors.dart';
+import '../../../../../../widgets/loading_screen.dart';
+import '../../../../../../widgets/save_confirmation_dialog.dart';
+import '../../../../../../widgets/save_result_dialog.dart';
 import '../auctions_page_details.dart';
 
 class SimpleAuctionCard extends StatefulWidget {
@@ -20,12 +25,12 @@ class _SimpleAuctionCardState extends State<SimpleAuctionCard> {
   int _currentPage = 0;
   late Timer _timer;
 
-  @override
-  void initState() {
-    super.initState();
-    _pageController = PageController();
-    _startImageSlider();
-  }
+  bool isFavorite = false; // Track the favorite state
+  String? userId; // Nullable userId
+
+
+
+
 
   @override
   void dispose() {
@@ -34,6 +39,78 @@ class _SimpleAuctionCardState extends State<SimpleAuctionCard> {
     super.dispose();
   }
 
+  @override
+  void initState() {
+    super.initState();
+    _pageController = PageController();
+    _startImageSlider();
+    _fetchCurrentUser();
+  }
+
+  void _fetchCurrentUser() async {
+    User? user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      userId = user.uid;
+      await _checkIfFavorite(); // Burada çağır, üstte değil!
+    }
+  }
+
+  Future<void> _checkIfFavorite() async {
+    if (userId == null) return;
+
+    final favorites = await FirestoreService().getFavoriteAuctions(userId!);
+    setState(() {
+      isFavorite = favorites.contains(widget.auction['id']);
+    });
+  }
+
+  Future<void> _toggleFavorite() async {
+    if (userId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Lütfen önce giriş yapın!')),
+      );
+      return;
+    }
+
+    showDialog(context: context, builder: (_) => const LoadingScreen());
+
+    try {
+      await FirestoreService().toggleFavorite(userId!, widget.auction['id'], !isFavorite)
+          .timeout(const Duration(seconds: 10), onTimeout: () {
+        throw TimeoutException('İşlem zaman aşımına uğradı');
+      });
+
+      setState(() {
+        isFavorite = !isFavorite;
+      });
+
+      // İlk önce loading dialogunu kapat
+      Navigator.pop(context);
+
+      // Sonra sonucu gösteren dialogu aç
+      showDialog(
+        context: context,
+        builder: (_) => SaveResultDialog(
+          isSuccess: true,
+          message: isFavorite ? 'Favorilere eklendi.' : 'Favorilerden çıkarıldı.',
+        ),
+      );
+    } catch (e) {
+      debugPrint('Error: $e');
+
+      // Hata durumunda da önce loading dialog kapatılır
+      Navigator.pop(context);
+
+      // Sonra hata mesajını gösteren dialog
+      showDialog(
+        context: context,
+        builder: (_) => SaveResultDialog(
+          isSuccess: false,
+          message: 'Favori işlemi başarısız. Hata: $e',
+        ),
+      );
+    }
+  }
   void _startImageSlider() {
     _timer = Timer.periodic(const Duration(seconds: 2), (timer) {
       if (_pageController.hasClients) {
@@ -92,6 +169,20 @@ class _SimpleAuctionCardState extends State<SimpleAuctionCard> {
                   height: 200,
                   width: double.infinity,
                   fit: BoxFit.cover,
+                ),
+              ),
+              Positioned(
+                right: 50,
+                top: 50,
+                bottom: 50,
+                left: 50,
+
+                child: IconButton(
+                  icon: Icon(
+                    isFavorite ? Icons.favorite : Icons.favorite_border,
+                    color: isFavorite ? Colors.red : Colors.grey,size: 55,
+                  ),
+                  onPressed: _toggleFavorite,
                 ),
               ),
               if (imageUrls.length > 1) ...[

@@ -1,3 +1,4 @@
+import 'package:e_ihale_clone/screens/dasboard/bottom_navigator_bar/favorite_page.dart';
 import 'package:e_ihale_clone/screens/profile/profile_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -32,7 +33,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   Widget build(BuildContext context) {
     final List<Widget> _pages = [
-      const HomePage(),
+      const FavoritePage(),
       const AuctionsPage(),
       const ProfilePage(),
     ];
@@ -183,8 +184,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
         unselectedItemColor: Colors.grey,           // Pasif ikon & yazı rengi
         items: const [
           BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: 'Anasayfa',
+            icon: Icon(Icons.favorite),
+            label: 'Favoriler',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.gavel),

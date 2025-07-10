@@ -165,4 +165,29 @@ class FirestoreService {
   }
 
 
+  // Toggle favorite status
+  Future<void> toggleFavorite(String userId, String auctionId, bool isFavorite) async {
+    final userDoc = _db.collection('favorites').doc(userId);
+    if (isFavorite) {
+      await userDoc.set({
+        'favoriteAuctions': FieldValue.arrayUnion([auctionId])
+      }, SetOptions(merge: true));
+    } else {
+      await userDoc.set({
+        'favoriteAuctions': FieldValue.arrayRemove([auctionId])
+      }, SetOptions(merge: true));
+    }
+  }
+
+
+  // Fetch user's favorite auctions
+  Future<List<String>> getFavoriteAuctions(String userId) async {
+    final snapshot = await _db.collection('favorites').doc(userId).get();
+    if (snapshot.exists) {
+      return List<String>.from(snapshot.data()?['favoriteAuctions'] ?? []);
+    }
+    return [];
+  }
+
+
 }

@@ -1,4 +1,5 @@
 import 'package:e_ihale_clone/screens/auth_wrapper.dart';
+import 'package:e_ihale_clone/screens/dasboard/bottom_navigator_bar/favorite_page.dart';
 import 'package:e_ihale_clone/screens/dasboard/dashboard_screen.dart';
 import 'package:e_ihale_clone/screens/dasboard/hamburger_menu/about_page.dart';
 import 'package:e_ihale_clone/screens/dasboard/hamburger_menu/faq_page.dart';
@@ -45,6 +46,10 @@ class MyApp extends StatelessWidget {
         '/finance': (context) => const FinancePage(),
         '/my-auctions': (context) => const MyAuctionsPage(),
         '/returns': (context) => const ReturnsPage(),
+        '/favorite': (context) => const FavoritePage(),
+
+
+
 
 
       },
