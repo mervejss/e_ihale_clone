@@ -1,11 +1,13 @@
 import 'dart:async';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:e_ihale_clone/screens/dasboard/bottom_navigator_bar/auctions/auctions_pages/widgets/flip_card_timer.dart';
 import 'package:e_ihale_clone/screens/dasboard/bottom_navigator_bar/auctions/auctions_pages/widgets/photo_iew_age.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../../../../../utils/colors.dart';
 import '../../../../../screens/dasboard/bottom_navigator_bar/auctions/auctions_pages/widgets/section_header_widget.dart';
+import '../../../../../widgets/save_result_dialog.dart';
 import 'bid_page.dart';
 
 class DisabledTextField extends StatelessWidget {
@@ -69,6 +71,9 @@ class _AuctionsPageDetailsState extends State<AuctionsPageDetails> {
   late PageController _pageController;
   int _currentPage = 0;
   late Timer _imageTimer;
+
+  List<Map<String, dynamic>> bids = []; // Teklifler için bir liste
+
   @override
   void initState() {
     super.initState();
@@ -80,7 +85,98 @@ class _AuctionsPageDetailsState extends State<AuctionsPageDetails> {
 
     _updateRemainingTime();
     _timer = Timer.periodic(const Duration(seconds: 1), (_) => _updateRemainingTime());
+
+    _fetchBids(); // Teklifleri çek
+
   }
+
+  Future<void> _fetchBids() async {
+    final auctionId = widget.auction['id'];
+
+    final QuerySnapshot bidSnapshot = await FirebaseFirestore.instance
+        .collection('bids')
+        .where('auctionId', isEqualTo: auctionId)
+        .orderBy('createdAt', descending: false)
+        .get();
+
+    setState(() {
+      bids = bidSnapshot.docs.map((doc) => doc.data() as Map<String, dynamic>).toList();
+    });
+  }
+  List<Widget> _buildBidList() {
+    return List<Widget>.generate(bids.length, (index) {
+      final bid = bids[index];
+      final formattedDate = DateFormat('dd.MM.yyyy HH:mm:ss', 'tr_TR')
+          .format((bid['createdAt'] as Timestamp).toDate().toLocal());
+
+      bool isWinningBid = _remainingTime == Duration.zero && index == bids.length - 1;
+
+      return Column(
+        children: [
+          Card(
+            color: Colors.white70,
+            elevation: 1.5,
+
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+              side: BorderSide(
+                color: isWinningBid ? Colors.red : Colors.grey.shade300,
+                width: isWinningBid ? 2.0 : 0.6,
+              ),
+            ),
+            child: ListTile(
+              leading: CircleAvatar(
+                backgroundColor: AppColors.primaryColor,
+                child: Text(
+                  '${index + 1}',
+                  style: const TextStyle(color: Colors.white),
+                ),
+              ),
+              title: RichText(
+                text: TextSpan(
+                  style: Theme.of(context).textTheme.bodyMedium,
+                  children: [
+                    const TextSpan(
+                      text: 'Teklif: ',
+                      style: TextStyle(fontWeight: FontWeight.bold,color: AppColors.primaryColor),
+                    ),
+                    TextSpan(
+                      text: '${bid['bidAmount']} ₺',
+                      style: const TextStyle(fontStyle: FontStyle.italic,fontSize: 18),
+                    ),
+                    if (isWinningBid)
+                      const TextSpan(
+                        text: '\n(İhaleyi Kazanan Teklif)',
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold, color: Colors.red,fontSize: 20),
+                      ),
+                  ],
+                ),
+              ),
+              subtitle: RichText(
+                text: TextSpan(
+                  style: Theme.of(context).textTheme.bodySmall,
+                  children: [
+                    const TextSpan(
+                      text: 'Tarih: ',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    TextSpan(
+                      text: formattedDate,
+                      style: const TextStyle(fontStyle: FontStyle.italic,color: Colors.blueAccent),
+                    ),
+                  ],
+                ),
+              ),
+              trailing: Icon(Icons.timeline, color: AppColors.primaryColor),
+            ),
+          ),
+
+        ],
+      );
+    });
+  }
+
 
   void _updateRemainingTime() {
     final now = DateTime.now();
@@ -352,6 +448,18 @@ class _AuctionsPageDetailsState extends State<AuctionsPageDetails> {
             ),
             const SizedBox(height: 16),
             Center(child: _buildCountdownTimer()), // Sayaç burada çağrılıyor
+
+            SectionHeader(title: 'Bu İhaleye Verilen Teklifler'),
+            bids.isEmpty
+                ? const Center(
+              child: Text(
+                'Bu ihale için henüz bir teklif yok.',
+                style: TextStyle(color: Colors.grey),
+              ),
+            )
+                : Column(children: _buildBidList(),),
+
+
             SectionHeader(title: 'Açıklama'),
             Stack(
               children: [
@@ -385,12 +493,25 @@ class _AuctionsPageDetailsState extends State<AuctionsPageDetails> {
           padding: const EdgeInsets.all(5.0),
           child: ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.secondaryColor,
-              foregroundColor: AppColors.primaryColor,
+              backgroundColor: _remainingTime == Duration.zero
+                  ? Colors.grey.shade500 // Süre bittiyse buton grimsi
+                  : AppColors.secondaryColor, // Normal renk
+              foregroundColor: _remainingTime == Duration.zero
+                  ? Colors.white70 // Süre bittiyse buton grimsi
+                  : AppColors.primaryColor, // Normal renk
               minimumSize: const Size(double.infinity, 50),
             ),
-            onPressed: () {
-
+            onPressed: _remainingTime == Duration.zero
+                ? () {
+              showDialog(
+                context: context,
+                builder: (context) => const SaveResultDialog(
+                  isSuccess: false,
+                  message: 'Süre dolduğu için artık bu ihaleye teklif veremezsiniz.',
+                ),
+              );
+            }
+                : () {
               Navigator.push(
                 context,
                 MaterialPageRoute(
@@ -402,16 +523,26 @@ class _AuctionsPageDetailsState extends State<AuctionsPageDetails> {
           ),
         ),
       ),
+
+
     );
   }
   Widget _buildCountdownTimer() {
-    if (_remainingTime == Duration.zero) {
-      return const Text(
-        'Süre doldu',
-        style: TextStyle(fontSize: 18, color: Colors.red, fontWeight: FontWeight.bold),
-      );
-    }
 
-    return FlipCardTimer(remainingTime: _remainingTime);
+
+    return Column(
+      children: [
+        FlipCardTimer(remainingTime: _remainingTime),
+        if (_remainingTime == Duration.zero)
+          const Text(
+            'Süre doldu',
+            style: TextStyle(
+              fontSize: 18,
+              color: Colors.red,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+      ],
+    );
   }
 }
