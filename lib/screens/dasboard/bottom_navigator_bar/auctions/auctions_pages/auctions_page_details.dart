@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:e_ihale_clone/screens/dasboard/bottom_navigator_bar/auctions/auctions_pages/widgets/flip_card_timer.dart';
+import 'package:e_ihale_clone/screens/dasboard/bottom_navigator_bar/auctions/auctions_pages/widgets/photo_iew_age.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../../../../../utils/colors.dart';
@@ -65,9 +66,14 @@ class _AuctionsPageDetailsState extends State<AuctionsPageDetails> {
   late Timer _timer;
   Duration _remainingTime = Duration.zero;
 
+  late PageController _pageController;
+  int _currentPage = 0;
+  late Timer _imageTimer;
   @override
   void initState() {
     super.initState();
+    _pageController = PageController();
+    _startImageSlider();
 
     createdAt = widget.auction['createdAt']?.toDate()?.toLocal() ?? DateTime.now();
     endAt = createdAt.add(const Duration(hours: 24));
@@ -82,7 +88,21 @@ class _AuctionsPageDetailsState extends State<AuctionsPageDetails> {
       _remainingTime = endAt.difference(now).isNegative ? Duration.zero : endAt.difference(now);
     });
   }
-
+  void _startImageSlider() {
+    _imageTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
+      if (_pageController.hasClients) {
+        int nextPage = _currentPage + 1;
+        if (nextPage >= (widget.auction['imageUrls'] as List).length) {
+          nextPage = 0;
+        }
+        _pageController.animateToPage(
+          nextPage,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+        );
+      }
+    });
+  }
   @override
   void dispose() {
     _timer.cancel();
@@ -92,6 +112,8 @@ class _AuctionsPageDetailsState extends State<AuctionsPageDetails> {
   Widget build(BuildContext context) {
     DateTime createdAt = widget.auction['createdAt']?.toDate()?.toLocal() ?? DateTime.now();
     DateTime endAt = createdAt.add(const Duration(hours: 24));
+    List<String> imageUrls = List<String>.from(widget.auction['imageUrls'] ?? []);
+    String fallbackImage = 'assets/images/urun_gorseli_hazirlaniyor_foto.jpg';
 
     return Scaffold(
       backgroundColor: AppColors.secondaryColor,
@@ -105,6 +127,170 @@ class _AuctionsPageDetailsState extends State<AuctionsPageDetails> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            SectionHeader(title: 'Ürün Görselleri'),
+
+            Stack(
+              children: [
+                Container(
+                  decoration: BoxDecoration(
+                    border: Border.all(
+                      color: AppColors.primaryColor, // Ana renk
+                      width: 5, // Kalınlık
+                    ),
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(10)),
+                  ),
+                  child: ClipRRect(
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(5)),
+                    child: GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => PhotoViewPage(
+                              images: imageUrls,
+                              initialIndex: _currentPage,
+                            ),
+                          ),
+                        );
+                      },
+                      child: imageUrls.isNotEmpty
+                          ? SizedBox(
+                        height: 200,
+                        child: PageView.builder(
+                          controller: _pageController,
+                          itemCount: imageUrls.length,
+                          onPageChanged: (index) {
+                            setState(() => _currentPage = index);
+                          },
+                          itemBuilder: (context, index) {
+                            return Image.network(
+                              imageUrls[index],
+                              fit: BoxFit.cover,
+                            );
+                          },
+                        ),
+                      )
+                          : Image.asset(
+                        fallbackImage,
+                        height: 200,
+                        width: double.infinity,
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                  ),
+                ),
+
+                // --- OK BUTONLARI ---
+                if (imageUrls.length > 1) ...[
+                  // Sol ok sadece ilk foto değilse görünür
+                  if (_currentPage > 0)
+                    Positioned(
+                      left: 0,
+                      top: 0,
+                      bottom: 0,
+                      child: IconButton(
+                        icon: Icon(Icons.arrow_back, color: Colors.white.withOpacity(0.7)),
+                        onPressed: () {
+                          if (_currentPage > 0) {
+                            _pageController.previousPage(
+                              duration: Duration(milliseconds: 300),
+                              curve: Curves.easeInOut,
+                            );
+                          }
+                        },
+                      ),
+                    ),
+
+                  // Sağ ok sadece son foto değilse görünür
+                  if (_currentPage < imageUrls.length - 1)
+                    Positioned(
+                      right: 0,
+                      top: 0,
+                      bottom: 0,
+                      child: IconButton(
+                        icon: Icon(Icons.arrow_forward, color: Colors.white.withOpacity(0.7)),
+                        onPressed: () {
+                          if (_currentPage < imageUrls.length - 1) {
+                            _pageController.nextPage(
+                              duration: Duration(milliseconds: 300),
+                              curve: Curves.easeInOut,
+                            );
+                          }
+                        },
+                      ),
+                    ),
+
+                  // Zoom butonu her durumda görünür
+                  Positioned(
+                    left: 50,
+                    top: 50,
+                    bottom: 50,
+                    right: 50,
+                    child: IconButton(
+                      icon: Icon(
+                        Icons.zoom_in_outlined,
+                        color: Colors.white.withOpacity(0.7),
+                        size: 65,
+                      ),
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => PhotoViewPage(
+                              images: imageUrls,
+                              initialIndex: _currentPage,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+
+                  // Slider noktaları
+                  Positioned(
+                    bottom: 30,
+                    left: 0,
+                    right: 0,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: List.generate(imageUrls.length, (index) {
+                        return AnimatedContainer(
+                          duration: Duration(milliseconds: 300),
+                          margin: EdgeInsets.symmetric(horizontal: 4),
+                          width: _currentPage == index ? 12 : 8,
+                          height: 8,
+                          decoration: BoxDecoration(
+                            color: _currentPage == index
+                                ? Colors.white
+                                : Colors.white.withOpacity(0.5),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                        );
+                      }),
+                    ),
+                  ),
+
+                  // Kaçıncı foto
+                  Positioned(
+                    bottom: 8,
+                    left: 0,
+                    right: 0,
+                    child: Center(
+                      child: Text(
+                        '[ ${_currentPage + 1} / ${imageUrls.length} ]',
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+
+              ],
+            ),
+
+            const SizedBox(height: 16),
             SectionHeader(title: 'Ürün Bilgileri'),
             DisabledTextField(
               controller: TextEditingController(text: widget.auction['productName']),

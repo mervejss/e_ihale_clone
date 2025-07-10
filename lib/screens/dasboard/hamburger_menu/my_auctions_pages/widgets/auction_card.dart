@@ -1,19 +1,60 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../../../utils/colors.dart';
 import '../my_auctions_page_detail.dart';
 
-class AuctionCard extends StatelessWidget {
+class AuctionCard extends StatefulWidget {
   final Map<String, dynamic> auction;
 
   const AuctionCard({super.key, required this.auction});
 
   @override
+  State<AuctionCard> createState() => _AuctionCardState();
+}
+
+class _AuctionCardState extends State<AuctionCard> {
+  late PageController _pageController;
+  int _currentPage = 0;
+  late Timer _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _pageController = PageController();
+    _startImageSlider();
+  }
+
+  @override
+  void dispose() {
+    _timer.cancel();
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  void _startImageSlider() {
+    _timer = Timer.periodic(const Duration(seconds: 2), (timer) {
+      if (_pageController.hasClients) {
+        int nextPage = _currentPage + 1;
+        if (nextPage >= (widget.auction['imageUrls'] as List).length) {
+          nextPage = 0;
+        }
+        _pageController.animateToPage(
+          nextPage,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+        );
+      }
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final String imageUrl = auction['imageUrl'] ?? '';
-    final String fallbackImage = 'assets/images/urun_gorseli_hazirlaniyor_foto.jpg';
-    final DateTime createdAt = (auction['createdAt'] as Timestamp).toDate();
+    List<String> imageUrls = List<String>.from(widget.auction['imageUrls'] ?? []);
+    String fallbackImage = 'assets/images/urun_gorseli_hazirlaniyor_foto.jpg';
+    final DateTime createdAt = (widget.auction['createdAt'] as Timestamp).toDate();
     final DateTime endAt = createdAt.add(const Duration(hours: 24));
     final DateFormat dateFormat = DateFormat('EEEE, d MMMM yyyy - HH:mm', 'tr_TR');
 
@@ -23,6 +64,7 @@ class AuctionCard extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+
             Icon(icon, size: 18, color: AppColors.primaryColor),
             const SizedBox(width: 8),
             SizedBox(
@@ -36,6 +78,7 @@ class AuctionCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+
                   Text(
                     value ?? '-',
                     maxLines: 2, // İlk 2 satırı göstermek için
@@ -60,7 +103,7 @@ class AuctionCard extends StatelessWidget {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => AuctionDetailPage(auction: auction),
+            builder: (_) => MyAuctionsPageDetail(auction: widget.auction),
           ),
         );
       },
@@ -71,22 +114,89 @@ class AuctionCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            ClipRRect(
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-              child: Image.network(
-                imageUrl.isNotEmpty ? imageUrl : '',
-                height: 180,
-                width: double.infinity,
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) {
-                  return Image.asset(
+            Stack(
+              children: [
+                ClipRRect(
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                  child: imageUrls.isNotEmpty
+                      ? SizedBox(
+                    height: 200,
+                    child: PageView.builder(
+                      controller: _pageController,
+                      itemCount: imageUrls.length,
+                      onPageChanged: (index) {
+                        setState(() => _currentPage = index);
+                      },
+                      itemBuilder: (context, index) {
+                        return Image.network(
+                          imageUrls[index],
+                          fit: BoxFit.cover,
+                        );
+                      },
+                    ),
+                  )
+                      : Image.asset(
                     fallbackImage,
-                    height: 180,
+                    height: 200,
                     width: double.infinity,
                     fit: BoxFit.cover,
-                  );
-                },
-              ),
+                  ),
+                ),
+                if (imageUrls.length > 1) ...[
+                  Positioned(
+                    left: 0,
+                    top: 0,
+                    bottom: 0,
+                    child: IconButton(
+                      icon: Icon(Icons.arrow_back, color: Colors.white.withOpacity(0.7)),
+                      onPressed: () {
+                        if (_currentPage > 0) {
+                          _pageController.previousPage(
+                            duration: Duration(milliseconds: 300),
+                            curve: Curves.easeInOut,
+                          );
+                        }
+                      },
+                    ),
+                  ),
+                  Positioned(
+                    right: 0,
+                    top: 0,
+                    bottom: 0,
+                    child: IconButton(
+                      icon: Icon(Icons.arrow_forward, color: Colors.white.withOpacity(0.7)),
+                      onPressed: () {
+                        if (_currentPage < imageUrls.length - 1) {
+                          _pageController.nextPage(
+                            duration: Duration(milliseconds: 300),
+                            curve: Curves.easeInOut,
+                          );
+                        }
+                      },
+                    ),
+                  ),
+                  Positioned(
+                    bottom: 8,
+                    left: 0,
+                    right: 0,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: List.generate(imageUrls.length, (index) {
+                        return AnimatedContainer(
+                          duration: Duration(milliseconds: 300),
+                          margin: EdgeInsets.symmetric(horizontal: 4),
+                          width: _currentPage == index ? 12 : 8,
+                          height: 8,
+                          decoration: BoxDecoration(
+                            color: _currentPage == index ? Colors.white : Colors.white.withOpacity(0.5),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                        );
+                      }),
+                    ),
+                  ),
+                ],
+              ],
             ),
             Padding(
               padding: const EdgeInsets.all(16.0),
@@ -94,20 +204,20 @@ class AuctionCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    auction['productName'] ?? 'Ürün Adı',
+                    widget.auction['productName'] ?? 'Ürün Adı',
                     style: const TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                   const SizedBox(height: 12),
-                  infoRow(Icons.category, 'Kategori', auction['category']),
-                  infoRow(Icons.precision_manufacturing, 'Marka', auction['brand']),
-                  infoRow(Icons.precision_manufacturing_outlined, 'Model', auction['model']),
-                  infoRow(Icons.description, 'Açıklama', auction['description']),
-                  infoRow(Icons.attach_money, 'Başlangıç Fiyatı', '₺${auction['startPrice']}'),
-                  infoRow(Icons.trending_up, 'Minimum Teklif', '₺${auction['minBid'] ?? '-'}'),
-                  infoRow(Icons.lock, 'Teminat', '${auction['deposit'] ?? '-'}'),
+                  infoRow(Icons.category, 'Kategori', widget.auction['category']),
+                  infoRow(Icons.precision_manufacturing, 'Marka', widget.auction['brand']),
+                  infoRow(Icons.precision_manufacturing_outlined, 'Model', widget.auction['model']),
+                  infoRow(Icons.description, 'Açıklama', widget.auction['description']),
+                  infoRow(Icons.attach_money, 'Başlangıç Fiyatı', '₺${widget.auction['startPrice']}'),
+                  infoRow(Icons.trending_up, 'Minimum Teklif', '₺${widget.auction['minBid'] ?? '-'}'),
+                  infoRow(Icons.lock, 'Teminat', '${widget.auction['deposit'] ?? '-'}'),
                   infoRow(Icons.calendar_today, 'İhale Başlangıç', dateFormat.format(createdAt)),
                   infoRow(Icons.schedule, 'İhale Bitiş', dateFormat.format(endAt)),
                   const SizedBox(height: 12),
@@ -118,7 +228,7 @@ class AuctionCard extends StatelessWidget {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => AuctionDetailPage(auction: auction),
+                            builder: (_) => MyAuctionsPageDetail(auction: widget.auction),
                           ),
                         );
                       },

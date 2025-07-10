@@ -1,23 +1,17 @@
-import 'package:firebase_storage/firebase_storage.dart';
 import 'dart:io';
+import 'package:firebase_storage/firebase_storage.dart';
 
 class StorageService {
   final FirebaseStorage _storage = FirebaseStorage.instance;
 
-  Future<List<String>> uploadImages(List<File> images) async {
-    List<String> downloadUrls = [];
-
-    for (var image in images) {
-      String fileName = DateTime.now().millisecondsSinceEpoch.toString();
-      var ref = _storage.ref().child('auctions_images').child(fileName);
-
-      UploadTask uploadTask = ref.putFile(image);
-      TaskSnapshot snapshot = await uploadTask;
-
-      String downloadUrl = await snapshot.ref.getDownloadURL();
-      downloadUrls.add(downloadUrl);
+  Future<String> uploadImage(String userId, String auctionId, File image) async {
+    try {
+      final ref = _storage.ref().child('users/$userId/auctions/$auctionId/${DateTime.now().millisecondsSinceEpoch}.jpg');
+      final uploadTask = ref.putFile(image);
+      final snapshot = await uploadTask;
+      return await snapshot.ref.getDownloadURL();
+    } catch (e) {
+      throw Exception('Failed to upload image: $e');
     }
-
-    return downloadUrls;
   }
 }

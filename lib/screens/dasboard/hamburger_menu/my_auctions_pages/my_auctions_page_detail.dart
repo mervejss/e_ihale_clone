@@ -9,16 +9,16 @@ import '../../../../services/firestore_service.dart';
 import '../../../../widgets/save_confirmation_dialog.dart';
 import '../../../../widgets/save_result_dialog.dart';
 
-class AuctionDetailPage extends StatefulWidget {
+class MyAuctionsPageDetail extends StatefulWidget {
   final Map<String, dynamic> auction;
 
-  const AuctionDetailPage({super.key, required this.auction});
+  const MyAuctionsPageDetail({super.key, required this.auction});
 
   @override
-  State<AuctionDetailPage> createState() => _AuctionDetailPageState();
+  State<MyAuctionsPageDetail> createState() => _MyAuctionsPageDetailState();
 }
 
-class _AuctionDetailPageState extends State<AuctionDetailPage> {
+class _MyAuctionsPageDetailState extends State<MyAuctionsPageDetail> {
   late TextEditingController productNameController;
   late TextEditingController brandController;
   late TextEditingController modelController;

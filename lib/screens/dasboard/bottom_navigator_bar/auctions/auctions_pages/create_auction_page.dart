@@ -4,7 +4,6 @@ import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import '../../../../../services/firestore_service.dart';
-import '../../../../../services/storage_service.dart';
 import '../../../../../utils/colors.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:e_ihale_clone/screens/dasboard/bottom_navigator_bar/auctions/auctions_pages/widgets/section_header_widget.dart';
@@ -130,7 +129,7 @@ class _CreateAuctionPageState extends State<CreateAuctionPage> {
         minBid: '${_minBidWholeController.text},${_minBidFractionalController.text}',
         category: _selectedCategory!,
         deposit: _depositController.text,
-        imageUrls: [],
+        selectedImages: _selectedImages!,  // XFile listesi
         createdAt: now,
       );
 

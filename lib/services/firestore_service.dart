@@ -1,4 +1,8 @@
+import 'dart:io';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:image_picker/image_picker.dart';
 
 class FirestoreService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
@@ -42,10 +46,11 @@ class FirestoreService {
     required String minBid,
     required String category,
     required String deposit,
-    required List<String> imageUrls,
+    required List<XFile> selectedImages,
     required DateTime createdAt,
   }) async {
     final auctionDoc = _db.collection('auctions').doc();
+    List<String> imageUrls = await uploadImages(selectedImages.map((img) => File(img.path)).toList(), auctionDoc.id);
 
     await auctionDoc.set({
       'createdBy': createdBy,
@@ -111,4 +116,25 @@ class FirestoreService {
       'createdAt': createdAt,
     });
   }
+
+
+  Future<List<String>> uploadImages(List<File> images, String auctionId) async {
+    List<String> imageUrls = [];
+
+    for (var image in images) {
+      // Her görüntüyü dosya adından oluştur
+      String fileName = DateTime.now().millisecondsSinceEpoch.toString();
+      Reference ref = FirebaseStorage.instance
+          .ref('auctions/$auctionId/$fileName');
+
+      UploadTask uploadTask = ref.putFile(image);
+
+      TaskSnapshot taskSnapshot = await uploadTask;
+      String downloadUrl = await taskSnapshot.ref.getDownloadURL();
+      imageUrls.add(downloadUrl);
+    }
+
+    return imageUrls;
+  }
+
 }
