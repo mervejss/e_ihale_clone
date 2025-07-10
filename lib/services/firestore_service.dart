@@ -136,5 +136,30 @@ class FirestoreService {
 
     return imageUrls;
   }
+  Future<void> updateAuctionImages(String auctionId, List<File> newImages) async {
+    final storageRef = FirebaseStorage.instance.ref('auctions/$auctionId');
+
+    // 1. Eski dosyaları Storage'dan sil
+    final ListResult listResult = await storageRef.listAll();
+    for (var item in listResult.items) {
+      await item.delete();
+    }
+
+    // 2. Yeni dosyaları yükle ve URL al
+    List<String> newImageUrls = [];
+    for (var image in newImages) {
+      String fileName = DateTime.now().millisecondsSinceEpoch.toString();
+      Reference ref = storageRef.child(fileName);
+      UploadTask uploadTask = ref.putFile(image);
+      TaskSnapshot snapshot = await uploadTask;
+      String downloadUrl = await snapshot.ref.getDownloadURL();
+      newImageUrls.add(downloadUrl);
+    }
+
+    // 3. Firestore dokümanındaki imageUrls alanını güncelle
+    await _db.collection('auctions').doc(auctionId).update({
+      'imageUrls': newImageUrls,
+    });
+  }
 
 }
