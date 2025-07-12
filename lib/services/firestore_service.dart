@@ -1,4 +1,8 @@
+import 'dart:io';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:image_picker/image_picker.dart';
 
 class FirestoreService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
@@ -28,5 +32,164 @@ class FirestoreService {
       'rol': 'normal', // << rol burada atanıyor
 
     });
+  }
+
+
+  // İhale oluşturma fonksiyonu
+  Future<void> createAuction({
+    required String createdBy,
+    required String productName,
+    required String brand,
+    required String model,
+    required String description,
+    required String startPrice,
+    required String minBid,
+    required String category,
+    required String deposit,
+    required List<XFile> selectedImages,
+    required DateTime createdAt,
+  }) async {
+    final auctionDoc = _db.collection('auctions').doc();
+    List<String> imageUrls = await uploadImages(selectedImages.map((img) => File(img.path)).toList(), auctionDoc.id);
+
+    await auctionDoc.set({
+      'createdBy': createdBy,
+      'productName': productName,
+      'brand': brand,
+      'model': model,
+      'description': description,
+      'startPrice': startPrice,
+      'minBid': minBid,
+      'category': category,
+      'deposit': deposit,
+      'imageUrls': imageUrls,
+      'createdAt': createdAt,
+      'winnerUserId': '', // initial value is empty
+
+    });
+  }
+
+  Future<List<Map<String, dynamic>>> getUserAuctions(String uid) async {
+    final querySnapshot = await _db.collection('auctions')
+        .where('createdBy', isEqualTo: uid)
+        .get();
+
+    return querySnapshot.docs.map((doc) => {
+      ...doc.data(),
+      'id': doc.id, // ID'yi kesinlikle ekleyin
+    }).toList();
+  }
+
+  // Yeni eklenen ihale güncelleme fonksiyonu
+  Future<void> updateAuction(String auctionId, Map<String, dynamic> data) async {
+    final auctionDoc = _db.collection('auctions').doc(auctionId);
+    await auctionDoc.update(data);
+  }
+
+  // Assume this is in your FirestoreService class
+  Future<List<Map<String, dynamic>>> getAuctionsByCategory(String category) async {
+    try {
+      QuerySnapshot snapshot = await FirebaseFirestore.instance
+          .collection('auctions')
+          .where('category', isEqualTo: category)
+          .get();
+
+      return snapshot.docs.map((doc) => {
+        ...doc.data() as Map<String, dynamic>,
+        'id': doc.id, // Ensure the ID is included
+      }).toList();
+    } catch (e) {
+      throw Exception('Error fetching auctions by category: $e');
+    }
+  }
+
+  // Method to save a bid
+  Future<void> saveBid({
+    required String auctionId,
+    required String createdBy,
+    required double bidAmount,
+    required DateTime createdAt,
+  }) async {
+    final bidsCollection = _db.collection('bids').doc();
+    await bidsCollection.set({
+      'auctionId': auctionId,
+      'createdBy': createdBy,
+      'bidAmount': bidAmount,
+      'createdAt': createdAt,
+    });
+  }
+
+
+  Future<List<String>> uploadImages(List<File> images, String auctionId) async {
+    List<String> imageUrls = [];
+
+    for (var image in images) {
+      // Her görüntüyü dosya adından oluştur
+      String fileName = DateTime.now().millisecondsSinceEpoch.toString();
+      Reference ref = FirebaseStorage.instance
+          .ref('auctions/$auctionId/$fileName');
+
+      UploadTask uploadTask = ref.putFile(image);
+
+      TaskSnapshot taskSnapshot = await uploadTask;
+      String downloadUrl = await taskSnapshot.ref.getDownloadURL();
+      imageUrls.add(downloadUrl);
+    }
+
+    return imageUrls;
+  }
+  Future<void> updateAuctionImages(String auctionId, List<File> newImages) async {
+    final storageRef = FirebaseStorage.instance.ref('auctions/$auctionId');
+
+    // 1. Eski dosyaları Storage'dan sil
+    final ListResult listResult = await storageRef.listAll();
+    for (var item in listResult.items) {
+      await item.delete();
+    }
+
+    // 2. Yeni dosyaları yükle ve URL al
+    List<String> newImageUrls = [];
+    for (var image in newImages) {
+      String fileName = DateTime.now().millisecondsSinceEpoch.toString();
+      Reference ref = storageRef.child(fileName);
+      UploadTask uploadTask = ref.putFile(image);
+      TaskSnapshot snapshot = await uploadTask;
+      String downloadUrl = await snapshot.ref.getDownloadURL();
+      newImageUrls.add(downloadUrl);
+    }
+
+    // 3. Firestore dokümanındaki imageUrls alanını güncelle
+    await _db.collection('auctions').doc(auctionId).update({
+      'imageUrls': newImageUrls,
+    });
+  }
+
+
+  // Toggle favorite status
+  Future<void> toggleFavorite(String userId, String auctionId, bool isFavorite) async {
+    final userDoc = _db.collection('favorites').doc(userId);
+    if (isFavorite) {
+      await userDoc.set({
+        'favoriteAuctions': FieldValue.arrayUnion([auctionId])
+      }, SetOptions(merge: true));
+    } else {
+      await userDoc.set({
+        'favoriteAuctions': FieldValue.arrayRemove([auctionId])
+      }, SetOptions(merge: true));
+    }
+  }
+
+
+  // Fetch user's favorite auctions
+  Future<List<String>> getFavoriteAuctions(String userId) async {
+    final snapshot = await _db.collection('favorites').doc(userId).get();
+    if (snapshot.exists) {
+      return List<String>.from(snapshot.data()?['favoriteAuctions'] ?? []);
+    }
+    return [];
+  }
+
+  Future<void> deleteAuction(String auctionId) async {
+    await _db.collection('auctions').doc(auctionId).delete();
   }
 }

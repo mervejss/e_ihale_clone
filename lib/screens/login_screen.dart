@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
-import 'dasboard/dashboard_screen.dart';
+import '../utils/colors.dart';
+import 'dasboard/bottom_navigator_bar/auctions/auctions_pages/widgets/text_field_widget.dart';
+import 'discover_brands_screen.dart';
 import 'forgot_password_screen.dart';
+import 'package:e_ihale_clone/widgets/save_result_dialog.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -16,59 +19,86 @@ class _LoginScreenState extends State<LoginScreen> {
   final AuthService _authService = AuthService();
 
   bool _loading = false;
+  bool _isPasswordVisible = false;
 
   void _loginUser() async {
     setState(() => _loading = true);
 
     final email = _emailController.text.trim();
     final password = _passwordController.text.trim();
-    print("Email: $email");
-    print("Password: $password");
 
     try {
       final user = await _authService.signInWithEmail(email, password);
       if (user != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Giriş başarılı!")),
-        );
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const DashboardScreen()),
-        );
+        _showDialog(true, "Giriş başarılı!");
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Hata: ${e.toString()}")),
-      );
+      _showDialog(false, "Giriş sırasında hata: ${e.toString()}");
     } finally {
       setState(() => _loading = false);
     }
   }
 
+  void _showDialog(bool isSuccess, String message) {
+    showDialog(
+      context: context,
+      builder: (context) => SaveResultDialog(
+        isSuccess: isSuccess,
+        message: message,
+      ),
+    ).then((_) {
+      if (isSuccess) {
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (_) => const DiscoverBrandsScreen()),
+              (route) => false,
+        );
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Giriş Yap")),
+      appBar: AppBar(
+        title: const Text("Giriş Yap"),
+        backgroundColor: AppColors.primaryColor,
+        foregroundColor: AppColors.secondaryColor,
+      ),
       body: Padding(
         padding: const EdgeInsets.all(24.0),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            TextField(
+            CustomTextField(
               controller: _emailController,
-              decoration: const InputDecoration(labelText: "Email"),
-              keyboardType: TextInputType.emailAddress,
+              label: "Email",
+              hintText: "E-posta adresinizi girin",
+              icon: Icons.email,
+              isRequired: true,
             ),
             const SizedBox(height: 16),
-            TextField(
+            CustomTextField(
               controller: _passwordController,
-              decoration: const InputDecoration(labelText: "Şifre"),
-              obscureText: true,
+              label: "Şifre",
+              hintText: "Şifrenizi girin",
+              icon: Icons.lock,
+              obscureText: !_isPasswordVisible,
+              isRequired: true,
+              suffixIcon: IconButton(
+                icon: Icon(
+                  _isPasswordVisible ? Icons.visibility : Icons.visibility_off,
+                  color: AppColors.primaryColor,
+                ),
+                onPressed: () {
+                  setState(() {
+                    _isPasswordVisible = !_isPasswordVisible;
+                  });
+                },
+              ),
             ),
             const SizedBox(height: 16),
-
             TextButton(
-
               onPressed: () {
                 Navigator.push(
                   context,
@@ -82,6 +112,14 @@ class _LoginScreenState extends State<LoginScreen> {
                 ? const CircularProgressIndicator()
                 : ElevatedButton(
               onPressed: _loginUser,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primaryColor,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 15),
+              ),
               child: const Text("Giriş Yap"),
             ),
           ],

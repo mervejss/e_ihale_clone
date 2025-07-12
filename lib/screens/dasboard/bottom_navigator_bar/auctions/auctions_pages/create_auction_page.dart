@@ -1,9 +1,20 @@
 import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
+import '../../../../../services/firestore_service.dart';
+import '../../../../../utils/colors.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:e_ihale_clone/screens/dasboard/bottom_navigator_bar/auctions/auctions_pages/widgets/section_header_widget.dart';
+import 'package:e_ihale_clone/screens/dasboard/bottom_navigator_bar/auctions/auctions_pages/widgets/text_field_widget.dart';
+import 'package:e_ihale_clone/screens/dasboard/bottom_navigator_bar/auctions/auctions_pages/widgets/disabled_text_field_widget.dart';
+import 'package:e_ihale_clone/screens/dasboard/bottom_navigator_bar/auctions/auctions_pages/widgets/dropdown_category_widget.dart';
+import 'package:e_ihale_clone/screens/dasboard/bottom_navigator_bar/auctions/auctions_pages/widgets/price_field_widget.dart';
+
+import '../../../../../widgets/loading_screen.dart';
+import '../../../../../widgets/save_result_dialog.dart';
+import '../../../dashboard_screen.dart';
 
 class CreateAuctionPage extends StatefulWidget {
   const CreateAuctionPage({super.key});
@@ -27,6 +38,8 @@ class _CreateAuctionPageState extends State<CreateAuctionPage> {
 
   String? _selectedCategory;
   List<XFile>? _selectedImages = [];
+  bool _photoError = false;
+  bool isExpanded = false;
 
   final List<String> _categories = [
     'Telefon',
@@ -35,6 +48,7 @@ class _CreateAuctionPageState extends State<CreateAuctionPage> {
     'Anakart',
     'Teknik parça',
   ];
+
   final Map<String, IconData> _categoryIcons = {
     'Telefon': Icons.phone_android,
     'Bilgisayar': Icons.computer,
@@ -42,9 +56,6 @@ class _CreateAuctionPageState extends State<CreateAuctionPage> {
     'Anakart': Icons.memory,
     'Teknik parça': Icons.build,
   };
-
-  final Color primaryColor = const Color(0xFF1e529b);
-  final Color secondaryColor = Colors.white;
 
   void _updateDeposit() {
     String whole = _startPriceWholeController.text.replaceAll('.', '');
@@ -57,39 +68,127 @@ class _CreateAuctionPageState extends State<CreateAuctionPage> {
   Future<void> _pickImages() async {
     final ImagePicker picker = ImagePicker();
     final List<XFile>? images = await picker.pickMultiImage();
-    if (images != null && images.length <= 10) {
-      setState(() {
-        _selectedImages = images;
-      });
+    if (images != null) {
+      if (images.length > 10) {
+        _showImageAlert('En fazla 10 resim seçebilirsiniz.');
+      } else {
+        setState(() {
+          _selectedImages = images;
+          _photoError = false;
+        });
+      }
     }
   }
 
-  void _submitForm() {
-    if (_formKey.currentState!.validate()) {
-      final now = DateTime.now();
-      final formattedDate = DateFormat('dd.MM.yyyy HH:mm:ss').format(now);
+  void _removeAllImages() {
+    setState(() {
+      _selectedImages!.clear();
+      _photoError = true;
+    });
+  }
 
-      print("Ürün Adı: ${_productNameController.text}");
-      print("Marka: ${_brandController.text}");
-      print("Model: ${_modelController.text}");
-      print("Açıklama: ${_descriptionController.text}");
-      print("Başlangıç Fiyatı: ${_startPriceWholeController.text},${_startPriceFractionalController.text}");
-      print("Minimum Artış Tutarı: ${_minBidWholeController.text},${_minBidFractionalController.text}");
-      print("Kategori: $_selectedCategory");
-      print("Kapora Bedeli: ${_depositController.text}");
-      print("Fotoğraflar: ${_selectedImages!.map((e) => e.name).join(', ')}");
-      print("Onay Zamanı: $formattedDate");
+  void _showImageAlert(String message) {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Tamam'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _submitForm() async {
+    final isValid = _formKey.currentState!.validate();
+
+    setState(() {
+      _photoError = _selectedImages == null || _selectedImages!.isEmpty;
+    });
+
+    if (isValid && !_photoError) {
+      final now = DateTime.now().toLocal();
+
+      User? user = FirebaseAuth.instance.currentUser;
+      String createdBy = user?.uid ?? '';
+
+      if (createdBy.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Kullanıcı girişi yapılmamış.')),
+        );
+        return;
+      }
+
+      // Show loading dialog
+      showDialog(
+        barrierDismissible: false,
+        context: context,
+        builder: (_) => const LoadingScreen(message: 'İhale oluşturuluyor...'),
+      );
+
+      FirestoreService firestoreService = FirestoreService();
+      await firestoreService.createAuction(
+        createdBy: createdBy,
+        productName: _productNameController.text,
+        brand: _brandController.text,
+        model: _modelController.text,
+        description: _descriptionController.text,
+        startPrice: '${_startPriceWholeController.text},${_startPriceFractionalController.text}',
+        minBid: '${_minBidWholeController.text},${_minBidFractionalController.text}',
+        category: _selectedCategory!,
+        deposit: _depositController.text,
+        selectedImages: _selectedImages!,  // XFile listesi
+        createdAt: now,
+      );
+
+      // Close loading dialog
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const DashboardScreen()),
+      );
+
+      // Show success dialog
+      showDialog(
+        context: context,
+        builder: (_) => const SaveResultDialog(
+          isSuccess: true,
+          message: 'İhale başarıyla oluşturuldu!',
+        ),
+
+      );
     }
+  }
+
+  void _showImageOptions(BuildContext context, String path) {
+    showDialog(
+      context: context,
+      builder: (_) => Dialog(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Image.file(File(path)),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Kapat'),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: secondaryColor,
+      backgroundColor: AppColors.secondaryColor,
       appBar: AppBar(
-        title: const Text('Yeni İhale Ekle', style: TextStyle(color: Colors.white)),
+        title: const Text('Yeni İhale Ekle', style: TextStyle(color: AppColors.secondaryColor)),
         centerTitle: true,
-        backgroundColor: primaryColor,
+        backgroundColor: AppColors.primaryColor,
+        foregroundColor: AppColors.secondaryColor,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -98,106 +197,271 @@ class _CreateAuctionPageState extends State<CreateAuctionPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildSectionHeader('Ürün Bilgileri'),
-              _buildTextField(
+              SectionHeader(title: 'Ürün Bilgileri'),
+              CustomTextField(
                 controller: _productNameController,
                 label: 'Ürün Adı',
+                hintText: 'Ürün adını buraya giriniz',
                 icon: Icons.label,
                 isRequired: true,
               ),
-              _buildTextField(
+              CustomTextField(
                 controller: _brandController,
                 label: 'Marka',
+                hintText: 'Ürün markasını buraya giriniz',
                 icon: Icons.branding_watermark,
+                isRequired: true,
               ),
-              _buildTextField(
+              CustomTextField(
                 controller: _modelController,
                 label: 'Model',
+                hintText: 'Ürün modelini buraya giriniz',
                 icon: Icons.device_hub,
+                isRequired: true,
               ),
-              _buildTextField(
-                controller: _descriptionController,
-                label: 'Açıklama',
-                icon: Icons.description,
-                maxLines: 2,
+              SectionHeader(title: 'Açıklama'),
+              Stack(
+                children: [
+                  TextFormField(
+                    controller: _descriptionController,
+                    maxLines: isExpanded ? null : 1,
+                    decoration: InputDecoration(
+                      hintText: 'Ürün açıklamasını buraya giriniz',
+                      hintStyle: const TextStyle(
+                        color: Colors.grey,
+                        fontStyle: FontStyle.italic,
+                        fontSize: 14,
+                      ),
+                      prefixIcon: const Icon(Icons.description, color: AppColors.primaryColor),
+                      border: OutlineInputBorder(
+                        borderSide: BorderSide(color: AppColors.primaryColor),
+                        borderRadius: BorderRadius.circular(8.0),
+                      ),
+                      labelStyle: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.primaryColor,
+                      ),
+                      filled: true,
+                      fillColor: Colors.white,
+                    ),
+                    style: const TextStyle(color: Colors.black),
+                  ),
+                  Positioned(
+                    top: 0,
+                    right: 0,
+                    child: IconButton(
+                      icon: Icon(isExpanded ? Icons.arrow_drop_up : Icons.arrow_drop_down),
+                      color: AppColors.primaryColor,
+                      onPressed: () {
+                        setState(() {
+                          isExpanded = !isExpanded;
+                        });
+                      },
+                    ),
+                  ),
+                ],
               ),
-              _buildSectionHeader('Kategori Seçimi'),
-              _buildDropdownCategory(),
-              _buildSectionHeader('Fiyat Bilgileri'),
-              _buildPriceField('Başlangıç Fiyatı', _startPriceWholeController, _startPriceFractionalController, Icons.monetization_on),
-              _buildPriceField('Minimum Artış Tutarı', _minBidWholeController, _minBidFractionalController, Icons.add),
-              _buildDisabledTextField(
+              const SizedBox(height: 8),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton.icon(
+                    onPressed: () {
+                      _descriptionController.text += '\n';
+                      setState(() {});
+                    },
+                    icon: const Icon(Icons.add, color: AppColors.primaryColor),
+                    label: const Text(
+                      'Yeni Satır Ekle',
+                      style: TextStyle(
+                        fontStyle: FontStyle.italic,
+                        color: AppColors.primaryColor,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              SectionHeader(title: 'Kategori Seçimi'),
+              DropdownCategory(
+                selectedCategory: _selectedCategory,
+                categoryIcons: _categoryIcons,
+                onChanged: (val) => setState(() => _selectedCategory = val),
+              ),
+              SectionHeader(title: 'Fiyat Bilgileri'),
+              PriceField(
+                title: 'Başlangıç Fiyatı',
+                wholeController: _startPriceWholeController,
+                fractionalController: _startPriceFractionalController,
+                icon: Icons.monetization_on,
+                onUpdate: () {
+                  _updateDeposit();
+                  _formKey.currentState!.validate();
+                },
+              ),
+              PriceField(
+                title: 'Minimum Artış Tutarı',
+                wholeController: _minBidWholeController,
+                fractionalController: _minBidFractionalController,
+                icon: Icons.add,
+                onUpdate: () {
+                  _updateDeposit();
+                  _formKey.currentState!.validate();
+                },
+              ),
+              DisabledTextField(
                 controller: _depositController,
                 label: 'Kapora Bedeli (₺)',
                 icon: Icons.lock,
               ),
               const SizedBox(height: 12),
-              _buildSectionHeader('Fotoğraf Yükleme'),
+              SectionHeader(title: 'Fotoğraf Yükleme'),
               Row(
                 children: [
                   ElevatedButton.icon(
-                    style: ElevatedButton.styleFrom(backgroundColor: primaryColor),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primaryColor,
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      elevation: 3,
+                    ),
                     onPressed: _pickImages,
-                    icon: const Icon(Icons.image, color: Colors.white),
-                    label: const Text('Fotoğraf Seç', style: TextStyle(color: Colors.white)),
+                    icon: const Icon(Icons.image, color: AppColors.secondaryColor),
+                    label: const Text('Fotoğraf Seç', style: TextStyle(color: AppColors.secondaryColor)),
                   ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              SizedBox(
-                height: 120,
-                child: _selectedImages != null && _selectedImages!.isNotEmpty
-                    ? Column(
-                  children: [
-                    Expanded(
-                      child: ListView.builder(
-                        scrollDirection: Axis.horizontal,
-                        itemCount: _selectedImages!.length,
-                        itemBuilder: (context, index) {
-                          return Stack(
-                            children: [
-                              Container(
-                                margin: const EdgeInsets.all(4.0),
-                                decoration: BoxDecoration(
-                                  border: Border.all(color: primaryColor, width: 2),
-                                ),
-                                child: Image.file(
-                                  File(_selectedImages![index].path),
-                                  fit: BoxFit.cover,
-                                  width: 100,
-                                  height: 100,
-                                ),
+                  const SizedBox(width: 12),
+                  if (_selectedImages != null && _selectedImages!.isNotEmpty)
+                    InkWell(
+                      onTap: _removeAllImages,
+                      borderRadius: BorderRadius.circular(12),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: Colors.red.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.red.shade700, width: 1.5),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.highlight_remove_sharp, color: Colors.red.shade700, size: 22),
+                            const SizedBox(width: 3),
+                            Text(
+                              'Seçili fotoğrafların tümünü kaldır',
+                              style: TextStyle(
+                                color: Colors.red.shade700,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 11,
                               ),
-                              Positioned(
-                                top: 2,
-                                right: 2,
-                                child: CircleAvatar(
-                                  radius: 12,
-                                  backgroundColor: primaryColor,
-                                  child: Text(
-                                    (index + 1).toString(),
-                                    style: TextStyle(
-                                      color: secondaryColor,
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          );
-                        },
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                    Text(
-                      '${_selectedImages!.length} fotoğraf seçildi',
-                      style: TextStyle(color: primaryColor),
+                ],
+              ),
+              if (_photoError)
+                Padding(
+                  padding: const EdgeInsets.only(top: 6, left: 4),
+                  child: Text(
+                    'En az 1 resim seçmelisiniz.',
+                    style: TextStyle(color: Colors.red[700], fontSize: 12),
+                  ),
+                ),
+              const SizedBox(height: 12),
+              SizedBox(
+                height: 150,
+                child: _selectedImages != null && _selectedImages!.isNotEmpty
+                    ? Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: ReorderableListView(
+                        scrollDirection: Axis.horizontal,
+                        onReorder: (oldIndex, newIndex) {
+                          setState(() {
+                            if (newIndex > oldIndex) newIndex -= 1;
+                            final item = _selectedImages!.removeAt(oldIndex);
+                            _selectedImages!.insert(newIndex, item);
+                          });
+                        },
+                        children: _selectedImages!.map((image) {
+                          final index = _selectedImages!.indexOf(image);
+                          return Container(
+                            key: ValueKey(image),
+                            margin: const EdgeInsets.all(4.0),
+                            child: GestureDetector(
+                              onTap: () => _showImageOptions(context, image.path),
+                              child: Stack(
+                                children: [
+                                  Container(
+                                    decoration: BoxDecoration(
+                                      border: Border.all(color: AppColors.primaryColor, width: 2),
+                                    ),
+                                    child: Image.file(
+                                      File(image.path),
+                                      fit: BoxFit.cover,
+                                      width: 100,
+                                      height: 100,
+                                    ),
+                                  ),
+                                  Positioned(
+                                    top: 2,
+                                    right: 4,
+                                    child: Container(
+                                      padding: const EdgeInsets.all(6),
+                                      decoration: BoxDecoration(
+                                        color: Colors.black54,
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: Text(
+                                        '${index + 1}',
+                                        style: const TextStyle(
+                                          color: AppColors.secondaryColor,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  const Positioned(
+                                    bottom: 2,
+                                    right: 4,
+                                    child: Icon(
+                                      Icons.zoom_out_map,
+                                      color: AppColors.secondaryColor,
+                                      size: 20,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    ),
+                    const Text(
+                      'Fotoğrafları kaydırarak sıralamasını değiştirebilirsiniz.',
+                      style: TextStyle(
+                        color: Colors.grey,
+                        fontStyle: FontStyle.italic,
+                        fontSize: 12,
+                      ),
+                    ),
+                    const Text(
+                      'Fotoğraflara tıklayarak ise yüklediğiniz fotoğrafı daha büyük boyutta görüntüleyebilir ve inceleyebilirsiniz.',
+                      style: TextStyle(
+                        color: Colors.grey,
+                        fontStyle: FontStyle.italic,
+                        fontSize: 12,
+                      ),
                     ),
                   ],
                 )
                     : Text(
                   'Fotoğraf seçilmedi',
                   style: TextStyle(
-                    color: primaryColor,
+                    color: AppColors.primaryColor,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -206,7 +470,7 @@ class _CreateAuctionPageState extends State<CreateAuctionPage> {
               Center(
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: primaryColor,
+                    backgroundColor: AppColors.primaryColor,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(18.0),
                     ),
@@ -216,9 +480,10 @@ class _CreateAuctionPageState extends State<CreateAuctionPage> {
                     width: 190,
                     child: Row(
                       children: [
-                        Icon(Icons.gpp_good_sharp,color: Colors.white,),
-                        SizedBox(width: 10,),
-                        Text('Kaydet ve Onaya Gönder',style: TextStyle(color: Colors.white,fontWeight: FontWeight.bold),),
+                        Icon(Icons.gpp_good_sharp, color: AppColors.secondaryColor),
+                        SizedBox(width: 10),
+                        Text('Kaydet ve Onaya Gönder',
+                            style: TextStyle(color: AppColors.secondaryColor, fontWeight: FontWeight.bold)),
                       ],
                     ),
                   ),
@@ -228,279 +493,6 @@ class _CreateAuctionPageState extends State<CreateAuctionPage> {
           ),
         ),
       ),
-    );
-  }
-
-  Widget _buildSectionHeader(String title) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 16.0),
-      child: Text(
-        title,
-        style: TextStyle(
-          fontSize: 18,
-          fontWeight: FontWeight.bold,
-          color: primaryColor,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTextField({
-    required TextEditingController controller,
-    required String label,
-    bool isRequired = false,
-    int maxLines = 1,
-    IconData? icon,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 12.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.only(bottom: 6.0, left: 4),
-            child: Text(
-              label,
-              style: TextStyle(
-                fontWeight: FontWeight.w600,
-                fontSize: 16,
-                color: Colors.black87,
-              ),
-            ),
-          ),
-          TextFormField(
-            controller: controller,
-            decoration: InputDecoration(
-              prefixIcon: Icon(icon, color: primaryColor),
-              border: OutlineInputBorder(
-                borderSide: BorderSide(color: primaryColor),
-                borderRadius: BorderRadius.circular(10.0),
-              ),
-              filled: true,
-              fillColor: Colors.white,
-              contentPadding: const EdgeInsets.symmetric(vertical: 16.0, horizontal: 12.0),
-            ),
-            style: TextStyle(color: Colors.black),
-            maxLines: maxLines,
-            validator: isRequired
-                ? (value) => value!.isEmpty ? 'Zorunlu alan' : null
-                : null,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDisabledTextField({
-    required TextEditingController controller,
-    required String label,
-    IconData? icon,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
-      child: TextFormField(
-        controller: controller,
-        enabled: false,
-        decoration: InputDecoration(
-          labelText: label,
-          prefixIcon: Icon(icon, color: primaryColor),
-          border: OutlineInputBorder(
-            borderSide: BorderSide(color: primaryColor),
-            borderRadius: BorderRadius.circular(8.0),
-          ),
-          labelStyle: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: primaryColor,
-          ),
-          filled: true,
-          fillColor: Colors.grey[200],
-        ),
-        style: TextStyle(color: primaryColor),
-      ),
-    );
-  }
-
-  Widget _buildDropdownCategory() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
-      child: DropdownButtonFormField<String>(
-        value: _selectedCategory,
-        items: _categoryIcons.entries.map((entry) {
-          return DropdownMenuItem<String>(
-            value: entry.key,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(
-                color: Colors.grey[100],
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: Colors.grey.shade300),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.grey.withOpacity(0.2),
-                    blurRadius: 4,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Row(
-                children: [
-                  Icon(entry.value, color: primaryColor),
-                  const SizedBox(width: 10),
-                  Text(
-                    entry.key,
-                    style: const TextStyle(fontSize: 16, color: Colors.black87),
-                  ),
-                ],
-              ),
-            ),
-          );
-        }).toList(),
-
-        selectedItemBuilder: (context) {
-          return _categoryIcons.entries.map((entry) {
-            return Row(
-              children: [
-                Icon(entry.value, color: primaryColor),
-                const SizedBox(width: 8),
-                Text(
-                  entry.key,
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: primaryColor,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            );
-          }).toList();
-        },
-
-        onChanged: (val) {
-          setState(() => _selectedCategory = val);
-        },
-
-        decoration: InputDecoration(
-          labelText: 'Kategori',
-          prefixIcon: Icon(Icons.category, color: primaryColor),
-          border: OutlineInputBorder(
-            borderSide: BorderSide(color: primaryColor),
-            borderRadius: BorderRadius.circular(12.0),
-          ),
-          labelStyle: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: primaryColor,
-          ),
-          filled: true,
-          fillColor: Colors.white,
-        ),
-        icon: const Icon(Icons.arrow_drop_down, color: Colors.black87),
-        dropdownColor: Colors.white,
-        style: TextStyle(color: primaryColor, fontWeight: FontWeight.w600),
-        validator: (value) => value == null ? 'Zorunlu alan' : null,
-      ),
-    );
-  }
-
-
-  Widget _buildPriceField(String title, TextEditingController wholeController, TextEditingController fractionalController, IconData icon) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.only(bottom: 6.0, left: 4),
-            child: Text(
-              title,
-              style: TextStyle(
-                fontWeight: FontWeight.w600,
-                fontSize: 16,
-                color: Colors.black87,
-              ),
-            ),
-          ),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Expanded(
-                child: TextFormField(
-                  controller: wholeController,
-                  keyboardType: TextInputType.number,
-                  inputFormatters: [
-                    FilteringTextInputFormatter.digitsOnly,
-                    ThousandsFormatter(),
-                  ],
-                  decoration: InputDecoration(
-                    prefixIcon: Icon(icon, color: primaryColor),
-                    border: OutlineInputBorder(
-                      borderSide: BorderSide(color: primaryColor),
-                      borderRadius: BorderRadius.circular(8.0),
-                    ),
-                    filled: true,
-                    fillColor: Colors.white,
-                  ),
-                  style: TextStyle(color: primaryColor),
-                  onChanged: (_) => setState(() {
-                    _updateDeposit();
-                  }),
-                ),
-              ),
-              SizedBox(width: 7),
-              const Padding(
-                padding: EdgeInsets.only(bottom: 0.0),
-                child: Text(
-                  ',',
-                  style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold),
-                ),
-              ),
-              SizedBox(width: 7),
-              SizedBox(
-                width: 70,
-                child: TextFormField(
-                  controller: fractionalController,
-                  keyboardType: TextInputType.number,
-                  maxLength: 2,
-                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                  decoration: InputDecoration(
-                    counterText: '',
-                    suffixText: '₺',
-                    border: OutlineInputBorder(
-                      borderSide: BorderSide(color: primaryColor),
-                      borderRadius: BorderRadius.circular(8.0),
-                    ),
-                    filled: true,
-                    fillColor: Colors.white,
-                  ),
-                  style: TextStyle(color: primaryColor),
-                  onChanged: (_) => setState(() {
-                    _updateDeposit();
-                  }),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// Helper class for currency formatting.
-class ThousandsFormatter extends TextInputFormatter {
-  @override
-  TextEditingValue formatEditUpdate(
-      TextEditingValue oldValue,
-      TextEditingValue newValue,
-      ) {
-    final newText = newValue.text.replaceAll('.', '');
-    if (newText.isEmpty) return newValue.copyWith(text: '');
-
-    final int value = int.parse(newText);
-    final formattedText = NumberFormat('#,###').format(value).replaceAll(',', '.');
-
-    return newValue.copyWith(
-      text: formattedText,
-      selection: TextSelection.collapsed(offset: formattedText.length),
     );
   }
 }

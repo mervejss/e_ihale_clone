@@ -1,21 +1,21 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../../../utils/colors.dart';
 import '../../../../services/firestore_service.dart';
-import 'auctions_pages/auctions_page_details.dart';
-import 'auctions_pages/widgets/simple_auction_card.dart';
+import 'auctions/auctions_pages/widgets/simple_auction_card.dart';
 
-class AuctionsPage extends StatefulWidget {
-  const AuctionsPage({super.key});
+class FavoritePage extends StatefulWidget {
+  const FavoritePage({super.key});
 
   @override
-  State<AuctionsPage> createState() => _AuctionsPageState();
+  _FavoritePageState createState() => _FavoritePageState();
 }
 
-class _AuctionsPageState extends State<AuctionsPage> with SingleTickerProviderStateMixin {
+class _FavoritePageState extends State<FavoritePage> with SingleTickerProviderStateMixin {
   late TabController _tabController;
   late ScrollController _scrollController;
   final FirestoreService _firestoreService = FirestoreService();
+  late Future<List<String>> _favoritesFuture;
   final List<String> tabs = ['Telefon', 'Bilgisayar', 'Aksesuar', 'Anakart', 'Teknik parça'];
 
   @override
@@ -23,17 +23,20 @@ class _AuctionsPageState extends State<AuctionsPage> with SingleTickerProviderSt
     super.initState();
     _scrollController = ScrollController();
     _tabController = TabController(length: tabs.length, vsync: this);
+    _favoritesFuture = _fetchFavorites();
+
     _tabController.addListener(() {
       _scrollToSelected();
       setState(() {});
     });
   }
 
-  @override
-  void dispose() {
-    _tabController.dispose();
-    _scrollController.dispose();
-    super.dispose();
+  Future<List<String>> _fetchFavorites() async {
+    final userId = FirebaseAuth.instance.currentUser?.uid;
+    if (userId != null) {
+      return await _firestoreService.getFavoriteAuctions(userId);
+    }
+    return [];
   }
 
   void _scrollToSelected() {
@@ -119,55 +122,63 @@ class _AuctionsPageState extends State<AuctionsPage> with SingleTickerProviderSt
   }
 
   @override
+  void dispose() {
+    _tabController.dispose();
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return DefaultTabController(
-      length: tabs.length,
-      child: Scaffold(
-        backgroundColor: AppColors.secondaryColor,
-        appBar: PreferredSize(
-          preferredSize: const Size.fromHeight(55),
-          child: _buildTabBar(),
-        ),
-        body: TabBarView(
-          controller: _tabController,
-          children: tabs.map((category) {
-            return FutureBuilder<List<Map<String, dynamic>>>(
-              future: _firestoreService.getAuctionsByCategory(category),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                } else if (snapshot.hasError) {
-                  return const Center(child: Text('Bir hata oluştu.'));
-                } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                  return const Center(child: Text('Bu kategoride henüz herhangi bir ihale bulunmuyor.'));
-                } else {
-                  return ListView.builder(
-                    padding: const EdgeInsets.all(16),
-                    itemCount: snapshot.data!.length,
-                    itemBuilder: (context, index) {
-                      final auction = snapshot.data![index];
-                      // Ensure that each auction has an 'id'
-                      final auctionWithId = {
-                        'id': auction['id'] ?? '<provide_default_id_if_needed>',
-                        ...auction,
-                      };
-                      return GestureDetector(
-                        onTap: () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => AuctionsPageDetails(auction: auctionWithId),
-                          ),
-                        ),
-                        child: SimpleAuctionCard(auction: auctionWithId),
-                      );
+    return FutureBuilder<List<String>>(
+      future: _favoritesFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        } else if (snapshot.hasError) {
+          return const Center(child: Text('Bir hata oluştu.'));
+        } else {
+          final favoriteAuctionIds = snapshot.data ?? [];
+          return DefaultTabController(
+            length: tabs.length,
+            child: Scaffold(
+              backgroundColor: AppColors.secondaryColor,
+              appBar: PreferredSize(
+                preferredSize: const Size.fromHeight(55),
+                child: _buildTabBar(),
+              ),
+              body: TabBarView(
+                controller: _tabController,
+                children: tabs.map((category) {
+                  return FutureBuilder<List<Map<String, dynamic>>>(
+                    future: _firestoreService.getAuctionsByCategory(category),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const Center(child: CircularProgressIndicator());
+                      } else if (snapshot.hasError) {
+                        return const Center(child: Text('Bir hata oluştu.'));
+                      } else {
+                        final auctions = snapshot.data?.where((auction) => favoriteAuctionIds.contains(auction['id'])).toList() ?? [];
+                        return auctions.isEmpty
+                            ? const Center(child: Text('Bu kategoride favori ihale yok.'))
+                            : ListView.builder(
+                          padding: const EdgeInsets.all(16),
+
+                          itemCount: auctions.length,
+                          itemBuilder: (context, index) {
+                            final auction = auctions[index];
+                            return SimpleAuctionCard(auction: auction);
+                          },
+                        );
+                      }
                     },
                   );
-                }
-              },
-            );
-          }).toList(),
-        ),
-      ),
+                }).toList(),
+              ),
+            ),
+          );
+        }
+      },
     );
   }
 }

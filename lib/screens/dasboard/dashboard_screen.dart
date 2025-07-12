@@ -1,6 +1,8 @@
+import 'package:e_ihale_clone/screens/dasboard/bottom_navigator_bar/favorite_page.dart';
 import 'package:e_ihale_clone/screens/profile/profile_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../../utils/colors.dart';
 import 'bottom_navigator_bar/auctions/auctions_pages/create_auction_page.dart';
 import 'bottom_navigator_bar/home_page.dart';
 import 'bottom_navigator_bar/auctions/auctions_page.dart';
@@ -30,17 +32,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
-    const Color primaryColor = Color(0xFF1e529b);
     final List<Widget> _pages = [
-      const HomePage(),
+      const FavoritePage(),
       const AuctionsPage(),
       const ProfilePage(),
     ];
 
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: primaryColor,
-        title: const Text('Teklifin Gelsin',style: TextStyle(color: Colors.white),),
+        backgroundColor: AppColors.primaryColor,
+        foregroundColor:AppColors.secondaryColor,
+
+        title: const Text('Teklifin Gelsin',style: TextStyle(color: AppColors.secondaryColor),),
         actions: [
           /*IconButton(
             icon: const Icon(Icons.logout),
@@ -62,15 +65,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
-                  border: Border.all(color: Colors.white),
+                  border: Border.all(color: AppColors.secondaryColor),
                   borderRadius: BorderRadius.circular(30),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: const [
-                    Icon(Icons.add_circle_outline, color: Colors.white, size: 20),
+                    Icon(Icons.add_circle_outline, color: AppColors.secondaryColor, size: 20),
                     SizedBox(width: 6),
-                    Text('Yeni İhale Oluştur', style: TextStyle(color: Colors.white)),
+                    Text('Yeni İhale Oluştur', style: TextStyle(color: AppColors.secondaryColor)),
                   ],
                 ),
 
@@ -100,7 +103,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       width: 100,
                       padding: const EdgeInsets.all(2),
                       decoration: const BoxDecoration(
-                        color: Colors.white,
+                        color: AppColors.secondaryColor,
                       ),
                       child: Image.asset(
                         'assets/images/logo_teklifingelsin.jpg',
@@ -111,7 +114,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     const Text(
                       'Teklifin Gelsin',
                       style: TextStyle(
-                        color: Colors.white,
+                        color: AppColors.secondaryColor,
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
                         letterSpacing: 1,
@@ -125,17 +128,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
             // 🟦 ÜST GRUP
             ListTile(
-              leading: const Icon(Icons.account_balance_wallet, color: primaryColor),
+              leading: const Icon(Icons.account_balance_wallet, color: AppColors.primaryColor),
               title: const Text('Finansal Durum'),
               onTap: () => Navigator.pushNamed(context, '/finance'),
             ),
             ListTile(
-              leading: const Icon(Icons.gavel, color: primaryColor),
+              leading: const Icon(Icons.gavel, color: AppColors.primaryColor),
               title: const Text('İhalelerim'),
               onTap: () => Navigator.pushNamed(context, '/my-auctions'),
             ),
             ListTile(
-              leading: const Icon(Icons.assignment_return, color: primaryColor),
+              leading: const Icon(Icons.assignment_return, color: AppColors.primaryColor),
               title: const Text('İade Taleplerim'),
               onTap: () => Navigator.pushNamed(context, '/returns'),
             ),
@@ -144,17 +147,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
             // 🟨 ORTA GRUP
             ListTile(
-              leading: const Icon(Icons.question_answer, color: primaryColor),
+              leading: const Icon(Icons.question_answer, color: AppColors.primaryColor),
               title: const Text('Sıkça Sorulan Sorular'),
               onTap: () => Navigator.pushNamed(context, '/faq'),
             ),
             ListTile(
-              leading: const Icon(Icons.article, color: primaryColor),
+              leading: const Icon(Icons.article, color: AppColors.primaryColor),
               title: const Text('Genel Şartlar'),
               onTap: () => Navigator.pushNamed(context, '/terms'),
             ),
             ListTile(
-              leading: const Icon(Icons.info, color: primaryColor),
+              leading: const Icon(Icons.info, color: AppColors.primaryColor),
               title: const Text('Hakkımızda'),
               onTap: () => Navigator.pushNamed(context, '/about'),
             ),
@@ -163,7 +166,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
             // 🔴 ALT GRUP
             ListTile(
-              leading: const Icon(Icons.logout, color: primaryColor),
+              leading: const Icon(Icons.logout, color: AppColors.primaryColor),
               title: const Text('Çıkış Yap'),
               onTap: () => _signOut(),
             ),
@@ -181,8 +184,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
         unselectedItemColor: Colors.grey,           // Pasif ikon & yazı rengi
         items: const [
           BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: 'Anasayfa',
+            icon: Icon(Icons.favorite),
+            label: 'Favoriler',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.gavel),
