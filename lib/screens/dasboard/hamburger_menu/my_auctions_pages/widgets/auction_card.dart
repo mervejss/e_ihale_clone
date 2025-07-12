@@ -1,15 +1,19 @@
 import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../../../../services/firestore_service.dart';
 import '../../../../../utils/colors.dart';
+import '../../../../../widgets/loading_screen.dart';
+import '../../../../../widgets/save_result_dialog.dart';
+import '../../../../../widgets/save_confirmation_dialog.dart';
 import '../my_auctions_page_detail.dart';
 
 class AuctionCard extends StatefulWidget {
   final Map<String, dynamic> auction;
+  final VoidCallback onRefresh; // Yeni eklendi
 
-  const AuctionCard({super.key, required this.auction});
+  const AuctionCard({super.key, required this.auction, required this.onRefresh});
 
   @override
   State<AuctionCard> createState() => _AuctionCardState();
@@ -19,6 +23,7 @@ class _AuctionCardState extends State<AuctionCard> {
   late PageController _pageController;
   int _currentPage = 0;
   late Timer _timer;
+  final FirestoreService _firestoreService = FirestoreService();
 
   @override
   void initState() {
@@ -50,6 +55,41 @@ class _AuctionCardState extends State<AuctionCard> {
     });
   }
 
+  Future<void> _deleteAuction() async {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const LoadingScreen(message: 'İhale siliniyor...'),
+    );
+
+    try {
+      await _firestoreService.deleteAuction(widget.auction['id']);
+      Navigator.pop(context); // Loading dialog kapat
+
+      // Başarıyla silindi mesajı göster
+      await showDialog(
+        context: context,
+        builder: (_) => const SaveResultDialog(
+          isSuccess: true,
+          message: 'İhale başarıyla silindi.',
+        ),
+      );
+
+      // Sayfayı yenile (geri dönmeden kal)
+      widget.onRefresh();
+
+    } catch (e) {
+      Navigator.pop(context); // Loading dialog kapat
+      showDialog(
+        context: context,
+        builder: (_) => const SaveResultDialog(
+          isSuccess: false,
+          message: 'İhale silinirken bir hata oluştu. Lütfen tekrar deneyiniz.',
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     List<String> imageUrls = List<String>.from(widget.auction['imageUrls'] ?? []);
@@ -64,7 +104,6 @@ class _AuctionCardState extends State<AuctionCard> {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-
             Icon(icon, size: 18, color: AppColors.primaryColor),
             const SizedBox(width: 8),
             SizedBox(
@@ -78,14 +117,13 @@ class _AuctionCardState extends State<AuctionCard> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-
                   Text(
                     value ?? '-',
-                    maxLines: 2, // İlk 2 satırı göstermek için
-                    overflow: TextOverflow.ellipsis, // Devamını ... ile göstermek için
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                     style: const TextStyle(fontSize: 12, fontStyle: FontStyle.italic),
                   ),
-                  if ((value ?? '').length > 40) // Metnin uzunluğuna bağlı bir kontrol
+                  if ((value ?? '').length > 40)
                     const Text(
                       '......... devamını oku',
                       style: TextStyle(fontSize: 12, fontStyle: FontStyle.italic, color: Colors.grey),
@@ -203,12 +241,38 @@ class _AuctionCardState extends State<AuctionCard> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    widget.auction['productName'] ?? 'Ürün Adı',
-                    style: const TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
+                  Row(
+                    children: [
+                      Text(
+                        widget.auction['productName'] ?? 'Ürün Adı',
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      Spacer(flex: 1,),
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            TextButton.icon(
+                              onPressed: () {
+                                showDialog(
+                                  context: context,
+                                  builder: (context) => SaveConfirmationDialog(
+                                    onSave: _deleteAuction,
+                                  ),
+                                );
+                              },
+                              icon: const Icon(Icons.delete, color: Colors.red),
+                              label: const Text('Sil', style: TextStyle(color: Colors.red)),
+                            ),
+                            const SizedBox(width: 8),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 12),
                   infoRow(Icons.category, 'Kategori', widget.auction['category']),

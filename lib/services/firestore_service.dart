@@ -189,5 +189,7 @@ class FirestoreService {
     return [];
   }
 
-
+  Future<void> deleteAuction(String auctionId) async {
+    await _db.collection('auctions').doc(auctionId).delete();
+  }
 }

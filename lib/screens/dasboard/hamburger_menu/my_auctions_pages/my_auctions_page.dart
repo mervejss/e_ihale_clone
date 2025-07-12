@@ -26,6 +26,15 @@ class _MyAuctionsPageState extends State<MyAuctionsPage> {
     if (_currentUser != null) {
       _myAuctions = _firestoreService.getUserAuctions(_currentUser!.uid);
     }
+    _loadAuctions(); // tek yerden yönet
+
+  }
+  void _loadAuctions() {
+    if (_currentUser != null) {
+      setState(() {
+        _myAuctions = _firestoreService.getUserAuctions(_currentUser!.uid);
+      });
+    }
   }
 
   @override
@@ -53,7 +62,10 @@ class _MyAuctionsPageState extends State<MyAuctionsPage> {
               itemCount: snapshot.data!.length,
               itemBuilder: (context, index) {
                 final auction = snapshot.data![index];
-                return AuctionCard(auction: auction);
+                return AuctionCard(
+                  auction: auction,
+                  onRefresh: _loadAuctions,
+                );
               },
             );
           }
